@@ -1,0 +1,93 @@
+---
+const SOCIAL_LINKS = [
+  {
+    href: 'https://www.instagram.com/personalstatementstudio/',
+    label: 'Instagram — Personal Statement Studio',
+    icon: '/logo-fb.png',
+  },
+  {
+    href: 'https://it.pinterest.com/ilestatement/',
+    label: 'Pinterest — Personal Statement Studio',
+    icon: '/logo-pint.png',
+  },
+];
+---
+
+<!-- Desktop: colonna fissa a destra -->
+<aside
+  class="social-sticky-desktop fixed right-4 top-1/2 z-[90] hidden -translate-y-1/2 flex-col gap-3 md:flex"
+  aria-label="Seguici sui social"
+>
+  {SOCIAL_LINKS.map((link) => (
+    <a
+      href={link.href}
+      target="_blank"
+      rel="noopener noreferrer"
+      aria-label={link.label}
+      title={link.label}
+      class="social-sticky-link"
+    >
+      <img src={link.icon} alt="" width="44" height="44" loading="lazy" decoding="async" />
+    </a>
+  ))}
+</aside>
+
+<!-- Mobile: barra fissa in basso -->
+<nav
+  class="social-sticky-mobile fixed bottom-0 left-0 right-0 z-[90] flex items-center justify-center gap-6 border-t px-4 py-2.5 backdrop-blur-md md:hidden"
+  style="border-color: var(--border); background-color: color-mix(in srgb, var(--bg) 88%, transparent); padding-bottom: max(0.625rem, env(safe-area-inset-bottom));"
+  aria-label="Seguici sui social"
+>
+  {SOCIAL_LINKS.map((link) => (
+    <a
+      href={link.href}
+      target="_blank"
+      rel="noopener noreferrer"
+      aria-label={link.label}
+      title={link.label}
+      class="social-sticky-link social-sticky-link--mobile"
+    >
+      <img src={link.icon} alt="" width="36" height="36" loading="lazy" decoding="async" />
+    </a>
+  ))}
+</nav>
+
+<style>
+  .social-sticky-link {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    border-radius: 9999px;
+    transition: transform 0.2s ease, box-shadow 0.2s ease;
+  }
+
+  .social-sticky-link:hover {
+    transform: scale(1.08);
+    box-shadow: 0 4px 20px color-mix(in srgb, var(--gold) 35%, transparent);
+  }
+
+  .social-sticky-link img {
+    display: block;
+    width: 2.75rem;
+    height: 2.75rem;
+    border-radius: 9999px;
+    object-fit: cover;
+  }
+
+  .social-sticky-link--mobile img {
+    width: 2.25rem;
+    height: 2.25rem;
+  }
+</style>
+
+<style is:global>
+  @media (max-width: 767px) {
+    body.has-social-sticky {
+      padding-bottom: 4.25rem;
+    }
+  }
+</style>
+
+<script is:inline>
+  document.body.classList.add('has-social-sticky');
+</script>

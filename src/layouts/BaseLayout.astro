@@ -1,6 +1,7 @@
 ---
 import '../styles/global.css';
 import ThemeToggle from '../components/common/ThemeToggle.astro';
+import SocialSticky from '../components/common/SocialSticky.astro';
 import Analytics from '@vercel/analytics/astro';
 
 interface Props {
@@ -123,6 +124,8 @@ const ogImageAbsolute = ogImage.startsWith('http') ? ogImage : `${siteUrl}${ogIm
 
     <!-- Spacer per compensare la top bar fixed -->
     <div class="h-[61px]"></div>
+
+    <SocialSticky />
 
     <main class="flex-1">
       <slot />
