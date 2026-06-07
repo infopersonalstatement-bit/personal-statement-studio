@@ -1,68 +1,126 @@
 ---
 import BaseLayout from '../layouts/BaseLayout.astro';
 import PageHero from '../components/common/PageHero.astro';
+import ScrollReveal from '../components/common/ScrollReveal.astro';
+import { PROTOCOLLI, BUNDLE_HUB } from '../lib/protocolli';
+
+const valori = [
+  {
+    title: 'Crescita concreta',
+    body: 'Consigli applicabili su abitudini, mindset e immagine — non motivazione vuota né formule magiche.',
+  },
+  {
+    title: 'Presenza intenzionale',
+    body: 'Ogni contenuto ha uno scopo. Non riempiamo il feed: costruiamo una comunicazione che ti rappresenta.',
+  },
+  {
+    title: 'Coerenza dentro e fuori',
+    body: 'Chi sei nella vita reale e come ti mostri online devono raccontare la stessa storia.',
+  },
+  {
+    title: 'Niente rumore',
+    body: 'Pochi strumenti utili, ben strutturati. Ogni protocollo risolve un problema preciso.',
+  },
+];
+
+const audience = [
+  'Chi vuole migliorare sé stesso',
+  'Chi vuole crescere sui social',
+  'Creator & professionisti',
+  'Chi vuole entrambi',
+];
 ---
 
 <BaseLayout
   title="Il Manifesto"
-  description="Chi siamo, perché esistiamo e in cosa crediamo. Il manifesto di Personal Statement Studio."
+  description="Perché esiste Personal Statement Studio: protocolli digitali per crescita personale, presenza online e bundle combinati."
 >
 
-  <PageHero eyebrow="Il Manifesto">
-    Chi sono e perché<br />
-    <em class="not-italic font-semibold" style="color: var(--gold);">esiste tutto questo.</em>
+  <PageHero
+    eyebrow="Il Manifesto"
+    subtitle="Personal Statement non è un corso né un'agenzia. È un laboratorio di protocolli digitali: crescita personale da un lato, presenza online dall'altro."
+    subtitleWide={true}
+  >
+    Dentro e fuori.<br />
+    <em class="not-italic font-semibold" style="color: var(--gold);">Due percorsi. Un solo standard.</em>
   </PageHero>
 
   <!-- ── IL PROBLEMA ───────────────────────────────────────────────────── -->
   <section class="py-20 px-6" style="background-color: var(--bg-surface);">
     <div class="mx-auto max-w-2xl">
-      <p class="mb-6 text-xs font-semibold uppercase tracking-[0.3em]" style="color: var(--gold);">Da dove nasce tutto</p>
+      <ScrollReveal>
+        <p class="mb-6 text-xs font-semibold uppercase tracking-[0.3em]" style="color: var(--gold);">Da dove nasce tutto</p>
+        <h2 class="font-display mb-8 text-3xl font-light leading-snug sm:text-4xl" style="color: var(--text);">
+          Due frustrazioni diverse.<br />
+          <em class="not-italic font-semibold" style="color: var(--gold);">Una sola radice.</em>
+        </h2>
+      </ScrollReveal>
 
-      <h2 class="font-display mb-8 text-3xl font-light leading-snug sm:text-4xl" style="color: var(--text);">
-        Il problema non era la mancanza di contenuti.<br />
-        Era la mancanza di <em class="not-italic font-semibold" style="color: var(--gold);">chiarezza.</em>
-      </h2>
-
-      <div class="space-y-5 text-base leading-relaxed" style="color: var(--text-muted);">
-        <p>
-          Ho visto imprenditori con prodotti straordinari comunicare come se fossero invisibili.
-          Ho visto professionisti di valore sparire nel rumore di un feed sovraffollato.
-          Ho visto creator con idee potenti perdere anni a inseguire format invece di costruire identità.
-        </p>
-        <p>
-          Il problema non era mai la qualità di ciò che facevano. Era come lo <strong style="color: var(--text);">percepivano gli altri.</strong>
-        </p>
-        <p>
-          La percezione non è superficiale. È il primo — e spesso unico — filtro attraverso cui le persone decidono se fidarsi di te,
-          seguirti, comprarti, sceglierti. E la percezione si costruisce. Con intenzione. Con coerenza. Con strategia.
-        </p>
-      </div>
+      <ScrollReveal delay={120}>
+        <div class="space-y-5 text-base leading-relaxed" style="color: var(--text-muted);">
+          <p>
+            Ho visto persone con tanto potenziale bloccate su sé stesse — abitudini che non reggono,
+            immagine che non rispecchia chi vogliono diventare, routine che non partono mai davvero.
+            <strong style="color: var(--text);">Sanno che potrebbero essere meglio, ma non sanno da dove iniziare.</strong>
+          </p>
+          <p>
+            Ho visto altrettante persone con qualcosa di reale da dire — e un profilo online che non lo trasmette.
+            Post senza strategia, caption che non convincono, un'immagine digitale incoerente con chi sono davvero.
+            <strong style="color: var(--text);">Hanno voce, ma online non si sente.</strong>
+          </p>
+          <p>
+            In entrambi i casi il problema non è la mancanza di informazioni.
+            È la mancanza di un <strong style="color: var(--gold);">percorso chiaro e applicabile</strong>.
+          </p>
+        </div>
+      </ScrollReveal>
     </div>
   </section>
 
   <!-- ── LA RISPOSTA ───────────────────────────────────────────────────── -->
   <section class="py-24 px-6">
-    <div class="mx-auto max-w-2xl">
-      <p class="mb-6 text-xs font-semibold uppercase tracking-[0.3em]" style="color: var(--gold);">La risposta</p>
+    <div class="mx-auto max-w-3xl">
+      <ScrollReveal>
+        <p class="mb-6 text-xs font-semibold uppercase tracking-[0.3em]" style="color: var(--gold);">La risposta</p>
+        <h2 class="font-display mb-8 text-3xl font-light leading-snug sm:text-4xl" style="color: var(--text);">
+          I protocolli.<br />
+          <em class="not-italic font-semibold" style="color: var(--gold);">Guide digitali, pronte da usare.</em>
+        </h2>
+      </ScrollReveal>
 
-      <h2 class="font-display mb-8 text-3xl font-light leading-snug sm:text-4xl" style="color: var(--text);">
-        Personal Statement Studio nasce per<br />
-        <em class="not-italic font-semibold" style="color: var(--gold);">trasformare identità in presenza.</em>
-      </h2>
+      <ScrollReveal delay={120}>
+        <p class="mb-10 text-base leading-relaxed" style="color: var(--text-muted);">
+          Personal Statement Studio raccoglie protocolli digitali in tre percorsi.
+          Compri, scarichi, applichi. Niente call, niente abbonamenti — solo contenuti strutturati
+          che puoi consultare quando vuoi, sempre disponibili nella tua area riservata.
+        </p>
+      </ScrollReveal>
 
-      <div class="space-y-5 text-base leading-relaxed" style="color: var(--text-muted);">
-        <p>
-          Non siamo un'agenzia di contenuti. Non produciamo post per riempire un calendario editoriale.
-          Non inseguiamo trend. Non costruiamo follower. <strong style="color: var(--text);">Costruiamo posizionamento.</strong>
-        </p>
-        <p>
-          Ogni strumento che creiamo nasce da una domanda precisa: <em style="color: var(--text);">questo aiuta davvero qualcuno a essere visto
-          per quello che vale?</em> Se la risposta non è un sì inequivocabile, non esiste.
-        </p>
-        <p>
-          I nostri prodotti digitali non sono contenuti generici. Sono sistemi strutturati, progettati per chi
-          ha poco tempo, obiettivi chiari e zero tolleranza per le soluzioni superficiali.
-        </p>
+      <div class="grid gap-6 sm:grid-cols-3">
+        {PROTOCOLLI.map((proto, i) => (
+          <ScrollReveal delay={i * 120} class="h-full">
+            <div
+              class="h-full rounded-2xl border p-6"
+              style="border-color: var(--border); background-color: var(--bg-card);"
+            >
+              <p class="mb-2 text-[10px] font-semibold uppercase tracking-[0.3em]" style="color: var(--gold);">Protocollo</p>
+              <h3 class="font-display mb-2 text-xl font-light" style="color: var(--text);">{proto.nome}</h3>
+              <p class="mb-3 text-xs font-semibold uppercase tracking-widest" style="color: var(--text-muted);">{proto.tagline}</p>
+              <p class="text-sm leading-relaxed" style="color: var(--text-muted);">{proto.descrizione}</p>
+            </div>
+          </ScrollReveal>
+        ))}
+        <ScrollReveal delay={240} class="h-full">
+          <div
+            class="h-full rounded-2xl border p-6"
+            style="border-color: var(--border); background-color: color-mix(in srgb, var(--gold) 4%, var(--bg-card));"
+          >
+            <p class="mb-2 text-[10px] font-semibold uppercase tracking-[0.3em]" style="color: var(--gold);">Offerta combinata</p>
+            <h3 class="font-display mb-2 text-xl font-light" style="color: var(--text);">{BUNDLE_HUB.nome}</h3>
+            <p class="mb-3 text-xs font-semibold uppercase tracking-widest" style="color: var(--text-muted);">{BUNDLE_HUB.tagline}</p>
+            <p class="text-sm leading-relaxed" style="color: var(--text-muted);">{BUNDLE_HUB.descrizione}</p>
+          </div>
+        </ScrollReveal>
       </div>
     </div>
   </section>
@@ -70,54 +128,26 @@ import PageHero from '../components/common/PageHero.astro';
   <!-- ── I VALORI ──────────────────────────────────────────────────────── -->
   <section class="py-24 px-6" style="background-color: var(--bg-surface);">
     <div class="mx-auto max-w-4xl">
-      <p class="mb-4 text-center text-xs font-semibold uppercase tracking-[0.3em]" style="color: var(--gold);">In cosa crediamo</p>
-      <h2 class="font-display mb-16 text-center text-3xl font-light sm:text-4xl" style="color: var(--text);">
-        I principi che guidano ogni scelta.
-      </h2>
+      <ScrollReveal>
+        <p class="mb-4 text-center text-xs font-semibold uppercase tracking-[0.3em]" style="color: var(--gold);">In cosa crediamo</p>
+        <h2 class="font-display mb-16 text-center text-3xl font-light sm:text-4xl" style="color: var(--text);">
+          I principi dietro ogni protocollo.
+        </h2>
+      </ScrollReveal>
 
       <div class="grid gap-8 sm:grid-cols-2">
-        {[
-          {
-            num: '—',
-            title: 'Chiarezza prima di tutto',
-            body: 'Un brand confuso non si difende con più contenuti. Si riprogetta dalle fondamenta. La chiarezza è un atto di rispetto verso chi ti ascolta.',
-          },
-          {
-            num: '—',
-            title: 'Coerenza come strategia',
-            body: 'La fiducia si costruisce nel tempo, con messaggi coerenti, estetiche riconoscibili, promesse mantenute. Non esiste shortcut.',
-          },
-          {
-            num: '—',
-            title: 'Identità come vantaggio competitivo',
-            body: 'Chi sei — davvero — è il tuo asset più difficile da replicare. Riallineare la tua identità significa costruire un vantaggio che dura.',
-          },
-          {
-            num: '—',
-            title: 'Risultati, non rumore',
-            body: 'Non aggiungiamo contenuti al feed. Portiamo direzione. Ogni strumento che pubblichiamo deve risolvere un problema reale con chiarezza chirurgica.',
-          },
-          {
-            num: '—',
-            title: 'Per chi non si accontenta',
-            body: 'I nostri strumenti sono pensati per imprenditori, sportivi, creator e professionisti che hanno già capito che il mediocre non basta. Per chi vuole il massimo da sé stesso.',
-          },
-          {
-            num: '—',
-            title: 'Alto rendimento, zero rumore',
-            body: 'L\'eccellenza non si annuncia. Si dimostra. Ogni parola, ogni prodotto, ogni scelta grafica deve essere al servizio di una cosa sola: il tuo posizionamento.',
-          },
-        ].map((v) => (
-          <div
-            class="rounded-2xl border p-7 transition-all duration-300"
-            style="border-color: var(--border); background-color: var(--bg-card);"
-            onmouseover="this.style.borderColor='var(--gold)'"
-            onmouseout="this.style.borderColor='var(--border)'"
-          >
-            <p class="mb-1 text-lg font-semibold" style="color: var(--gold);">{v.num}</p>
-            <h3 class="mb-3 text-sm font-semibold uppercase tracking-widest" style="color: var(--text);">{v.title}</h3>
-            <p class="text-sm leading-relaxed" style="color: var(--text-muted);">{v.body}</p>
-          </div>
+        {valori.map((v, i) => (
+          <ScrollReveal delay={i * 100}>
+            <div
+              class="h-full rounded-2xl border p-7 transition-all duration-300"
+              style="border-color: var(--border); background-color: var(--bg-card);"
+              onmouseover="this.style.borderColor='var(--gold)'"
+              onmouseout="this.style.borderColor='var(--border)'"
+            >
+              <h3 class="mb-3 text-sm font-semibold uppercase tracking-widest" style="color: var(--text);">{v.title}</h3>
+              <p class="text-sm leading-relaxed" style="color: var(--text-muted);">{v.body}</p>
+            </div>
+          </ScrollReveal>
         ))}
       </div>
     </div>
@@ -126,56 +156,66 @@ import PageHero from '../components/common/PageHero.astro';
   <!-- ── A CHI È RIVOLTO ───────────────────────────────────────────────── -->
   <section class="py-24 px-6">
     <div class="mx-auto max-w-2xl text-center">
-      <p class="mb-6 text-xs font-semibold uppercase tracking-[0.3em]" style="color: var(--gold);">A chi parliamo</p>
-      <h2 class="font-display mb-10 text-3xl font-light leading-snug sm:text-4xl" style="color: var(--text);">
-        Non per tutti.<br />
-        <em class="not-italic font-semibold" style="color: var(--gold);">Per chi ha già deciso.</em>
-      </h2>
+      <ScrollReveal>
+        <p class="mb-6 text-xs font-semibold uppercase tracking-[0.3em]" style="color: var(--gold);">A chi parliamo</p>
+        <h2 class="font-display mb-10 text-3xl font-light leading-snug sm:text-4xl" style="color: var(--text);">
+          Non per tutti.<br />
+          <em class="not-italic font-semibold" style="color: var(--gold);">Per chi vuole evolversi.</em>
+        </h2>
+      </ScrollReveal>
 
-      <div class="mb-12 grid grid-cols-2 gap-4 sm:grid-cols-4">
-        {['Imprenditori', 'Sportivi', 'Creator', 'Professionisti'].map((cat) => (
-          <div
-            class="rounded-xl border px-4 py-5 text-sm font-medium uppercase tracking-widest"
-            style="border-color: var(--gold); color: var(--gold);"
-          >
-            {cat}
-          </div>
+      <div class="mb-12 grid grid-cols-2 gap-4">
+        {audience.map((cat, i) => (
+          <ScrollReveal delay={i * 80}>
+            <div
+              class="rounded-xl border px-4 py-5 text-xs font-medium uppercase tracking-widest sm:text-sm"
+              style="border-color: var(--gold); color: var(--gold);"
+            >
+              {cat}
+            </div>
+          </ScrollReveal>
         ))}
       </div>
 
-      <p class="mb-10 text-base leading-relaxed" style="color: var(--text-muted);">
-        Persone che hanno un potenziale reale, che costruiscono qualcosa di valore, e che vogliono che il mondo
-        lo percepisca per quello che è davvero. Non di più, non di meno — <strong style="color: var(--text);">esattamente per quello che è.</strong>
-      </p>
+      <ScrollReveal delay={120}>
+        <p class="mb-10 text-base leading-relaxed" style="color: var(--text-muted);">
+          Persone che vogliono lavorare su sé stesse, sulla propria comunicazione online, o su entrambi.
+          Non cerchiamo chi vuole scorciatoie — cerchiamo chi è pronto a <strong style="color: var(--text);">applicare un metodo</strong>.
+        </p>
+      </ScrollReveal>
 
-      <a
-        href="/shop"
-        class="inline-block rounded-full px-10 py-4 text-sm font-semibold uppercase tracking-widest transition-all duration-200"
-        style="background-color: var(--gold); color: #0F0D0A;"
-        onmouseover="this.style.backgroundColor='var(--gold-hover)'"
-        onmouseout="this.style.backgroundColor='var(--gold)'"
-      >
-        Esplora i prodotti
-      </a>
+      <ScrollReveal delay={200}>
+        <a
+          href="/shop"
+          class="inline-block rounded-full px-10 py-4 text-sm font-semibold uppercase tracking-widest transition-all duration-200"
+          style="background-color: var(--gold); color: #0F0D0A;"
+          onmouseover="this.style.backgroundColor='var(--gold-hover)'"
+          onmouseout="this.style.backgroundColor='var(--gold)'"
+        >
+          Accedi ai Protocolli
+        </a>
+      </ScrollReveal>
     </div>
   </section>
 
   <!-- ── FIRMA ─────────────────────────────────────────────────────────── -->
   <section class="py-20 px-6 text-center" style="background-color: var(--bg-surface);">
     <div class="mx-auto max-w-xl">
-      <img
-        src="/logo.png"
-        alt="Personal Statement Studio"
-        class="mx-auto mb-8 h-24 w-auto"
-        style="filter: drop-shadow(0 4px 16px color-mix(in srgb, var(--gold) 35%, transparent));"
-      />
-      <p class="font-display text-xl font-light italic leading-relaxed" style="color: var(--text-muted);">
-        "Non costruiamo brand. Costruiamo la versione più riconoscibile<br />
-        e strategica di ciò che sei già."
-      </p>
-      <p class="mt-6 text-xs uppercase tracking-[0.3em]" style="color: var(--gold);">
-        Personal Statement Studio
-      </p>
+      <ScrollReveal>
+        <img
+          src="/logo.png"
+          alt="Personal Statement Studio"
+          class="mx-auto mb-8 h-24 w-auto"
+          style="filter: drop-shadow(0 4px 16px color-mix(in srgb, var(--gold) 35%, transparent));"
+        />
+        <p class="font-display text-xl font-light italic leading-relaxed" style="color: var(--text-muted);">
+          "Non ti chiediamo di diventare qualcun altro.<br />
+          Ti diamo le istruzioni per essere la versione più chiara — dentro e online — di chi sei già."
+        </p>
+        <p class="mt-6 text-xs uppercase tracking-[0.3em]" style="color: var(--gold);">
+          Personal Statement Studio
+        </p>
+      </ScrollReveal>
     </div>
   </section>
 
