@@ -39,6 +39,15 @@ const { count: bundleCount } = await Astro.locals.supabase
             onmouseover="this.style.borderColor='var(--gold)'; this.style.transform='translateY(-3px)'"
             onmouseout="this.style.borderColor='var(--border)'; this.style.transform='translateY(0)'"
           >
+            <div class="mb-5 flex justify-center">
+              <img
+                src={proto.icon}
+                alt=""
+                class="h-28 w-auto max-w-full object-contain transition-transform duration-300 group-hover:scale-105"
+                loading="lazy"
+                decoding="async"
+              />
+            </div>
             <p class="mb-3 text-[10px] font-semibold uppercase tracking-[0.3em]" style="color: var(--gold);">
               Protocollo
             </p>
@@ -66,6 +75,15 @@ const { count: bundleCount } = await Astro.locals.supabase
         onmouseover="this.style.borderColor='var(--gold)'; this.style.transform='translateY(-3px)'"
         onmouseout="this.style.borderColor='var(--border)'; this.style.transform='translateY(0)'"
       >
+        <div class="mb-5 flex justify-center">
+          <img
+            src={BUNDLE_HUB.icon}
+            alt=""
+            class="h-28 w-auto max-w-full object-contain transition-transform duration-300 group-hover:scale-105"
+            loading="lazy"
+            decoding="async"
+          />
+        </div>
         <p class="mb-3 text-[10px] font-semibold uppercase tracking-[0.3em]" style="color: var(--gold);">
           Offerta combinata
         </p>
