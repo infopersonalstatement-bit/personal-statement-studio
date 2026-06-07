@@ -1,13 +1,14 @@
 ---
-const { searchParams } = Astro.url;
-const code = searchParams.get('code');
-const next = searchParams.get('next') ?? null;
+export const prerender = false;
+
+const reqUrl      = new URL(Astro.request.url);
+const code        = reqUrl.searchParams.get('code');
+const next        = reqUrl.searchParams.get('next') ?? null;
 
 if (code) {
   const { data, error } = await Astro.locals.supabase.auth.exchangeCodeForSession(code);
 
   if (!error && data.user) {
-    // Se c'era un next esplicito nell'URL usalo, altrimenti determina in base al ruolo
     if (next) return Astro.redirect(next);
 
     const { data: profile } = await Astro.locals.supabase
