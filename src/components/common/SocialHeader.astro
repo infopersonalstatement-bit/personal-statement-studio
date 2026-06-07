@@ -2,7 +2,7 @@
 import { SOCIAL_LINKS } from '../../lib/social-links';
 ---
 
-<div class="social-header hidden items-center gap-2 md:flex" aria-label="Seguici sui social">
+<div class="social-header pointer-events-auto hidden items-center justify-center gap-2.5 md:flex" aria-label="Seguici sui social">
   <span class="social-header-label">I Social</span>
   {SOCIAL_LINKS.map((link) => (
     <a
@@ -26,9 +26,9 @@ import { SOCIAL_LINKS } from '../../lib/social-links';
     letter-spacing: 0.18em;
     color: var(--gold);
     white-space: nowrap;
-    padding-right: 0.25rem;
+    padding-right: 0.5rem;
     border-right: 1px solid var(--border);
-    margin-right: 0.125rem;
+    margin-right: 0.25rem;
   }
 
   .social-header-link {
