@@ -145,6 +145,29 @@ body {
 .scrollbar-hide::-webkit-scrollbar { display: none; }
 .scrollbar-hide { -ms-overflow-style: none; scrollbar-width: none; }
 
+/* ─── Testo di vendita prodotti (shop-prose) ─────────────────────────────────── */
+.shop-prose { color: var(--text); line-height: 1.85; font-size: .95rem; }
+.shop-prose h1,.shop-prose h2,.shop-prose h3 {
+  font-family: var(--font-display,'Cormorant Garamond',serif);
+  font-weight: 400; color: var(--text); margin: 1.6rem 0 .6rem; line-height: 1.3;
+}
+.shop-prose h1 { font-size: 1.6rem; }
+.shop-prose h2 { font-size: 1.25rem; }
+.shop-prose h3 { font-size: 1.05rem; }
+.shop-prose p  { margin: 0 0 1rem; }
+.shop-prose strong { color: var(--text); font-weight: 600; }
+.shop-prose em     { color: var(--text-muted); font-style: italic; }
+.shop-prose a      { color: var(--gold); text-decoration: underline; }
+.shop-prose ul,.shop-prose ol { margin: 0 0 1rem; padding-left: 1.5rem; }
+.shop-prose li  { margin-bottom: .35rem; }
+.shop-prose blockquote {
+  border-left: 3px solid var(--gold); margin: 1.5rem 0;
+  padding: .75rem 1.25rem;
+  background: color-mix(in srgb, var(--gold) 5%, transparent);
+  border-radius: 0 8px 8px 0;
+  font-style: italic; color: var(--text-muted);
+}
+
 /* ─── Logo full (con sfondo nero integrato) ──────────────────────────────────
    multiply  su sfondo chiaro: il nero del canvas sparisce, l'oro rimane.
    screen    su sfondo scuro:  il nero sparisce, l'oro aggiunge luce calda.  */

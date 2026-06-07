@@ -1,7 +1,6 @@
 ---
 import BaseLayout from '../../layouts/BaseLayout.astro';
 import ShareButton from '../../components/common/ShareButton.astro';
-import BookViewer from '../../components/common/BookViewer.astro';
 
 const { slug } = Astro.params;
 const user    = Astro.locals.user;
@@ -145,9 +144,11 @@ const correlati = prodotto.categorie?.id
 
     <div class="grid gap-12 lg:grid-cols-[1fr_320px]">
 
-      <!-- ── Colonna sinistra: contenuto ─────────────────────── -->
+      <!-- ── Colonna sinistra: testo di vendita (sempre visibile) ── -->
       <div>
-        <div class="mb-6 flex flex-wrap items-center justify-between gap-3">
+
+        <!-- Categoria + tag + condivisione -->
+        <div class="mb-8 flex flex-wrap items-center justify-between gap-3">
           <div class="flex flex-wrap items-center gap-2">
             {prodotto.categorie ? (
               <a href={`/shop/categoria/${prodotto.categorie.slug}`}
@@ -179,62 +180,63 @@ const correlati = prodotto.categorie?.id
           />
         </div>
 
-        <!-- Anteprima — effetto libro sfogliabile -->
+        <!-- Testo di vendita — sempre visibile a tutti -->
         {prodotto.anteprima ? (
-          <div>
-            <p class="mb-4 text-xs font-semibold uppercase tracking-widest" style="color: var(--text-muted);">
-              {hasPurchased ? 'Contenuto del prodotto' : 'Anteprima del contenuto'}
+          <div class="shop-prose" set:html={prodotto.anteprima} />
+        ) : prodotto.descrizione ? (
+          <p class="text-base leading-relaxed" style="color:var(--text);">{prodotto.descrizione}</p>
+        ) : null}
+
+        <!-- Divisore -->
+        <div class="my-10 flex items-center gap-4">
+          <div class="h-px flex-1" style="background-color: var(--border);"></div>
+          <div class="h-1.5 w-1.5 rounded-full" style="background-color: var(--gold);"></div>
+          <div class="h-px flex-1" style="background-color: var(--border);"></div>
+        </div>
+
+        <!-- Box download (solo per chi ha acquistato) -->
+        {hasPurchased && (
+          <div
+            class="rounded-2xl border p-6"
+            style="border-color: color-mix(in srgb, var(--gold) 30%, transparent); background-color: color-mix(in srgb, var(--gold) 5%, transparent);"
+          >
+            <p class="mb-1 flex items-center gap-2 text-sm font-semibold" style="color: var(--gold);">
+              <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z" />
+              </svg>
+              Hai acquistato questo prodotto
             </p>
-
-            <BookViewer
-              content={prodotto.anteprima}
-              title={prodotto.nome}
-              subtitle={prodotto.descrizione ? prodotto.descrizione.slice(0, 80) + (prodotto.descrizione.length > 80 ? '…' : '') : undefined}
-              backCover={!hasPurchased ? {
-                message: 'Acquista per accedere al contenuto completo e scaricare il PDF.',
-                ctaLabel: 'Acquista ora',
-                ctaHref: `#acquisto`,
-              } : null}
-              id={`shop-${prodotto.id}`}
-            />
-
-            <!-- Box download (solo se acquistato) -->
-            {hasPurchased && (
-              <div
-                class="mt-6 rounded-2xl border p-6"
-                style="border-color: color-mix(in srgb, var(--gold) 30%, transparent); background-color: color-mix(in srgb, var(--gold) 5%, transparent);"
-              >
-                <p class="mb-2 flex items-center gap-2 text-sm font-semibold" style="color: var(--gold);">
-                  <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z" />
-                  </svg>
-                  Hai acquistato questo prodotto
-                </p>
-                <p class="mb-5 text-sm" style="color: var(--text-muted);">
-                  Puoi scaricare il PDF in qualsiasi momento dalla tua area riservata o direttamente qui.
-                </p>
-                <a
-                  href={`/api/download/${prodotto.id}`}
-                  target="_blank"
-                  rel="noopener noreferrer"
-                  class="inline-flex items-center gap-2 rounded-full px-6 py-3 text-sm font-semibold uppercase tracking-widest transition-all duration-200"
-                  style="background-color: var(--gold); color: #0F0D0A;"
-                  onmouseover="this.style.backgroundColor='var(--gold-hover)'"
-                  onmouseout="this.style.backgroundColor='var(--gold)'"
-                >
-                  <svg xmlns="http://www.w3.org/2000/svg" class="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-4l-4 4m0 0l-4-4m4 4V4" />
-                  </svg>
-                  Scarica il PDF
-                </a>
-              </div>
-            )}
+            <p class="mb-5 text-sm" style="color: var(--text-muted);">
+              Puoi scaricare il PDF qui o dalla tua area riservata in qualsiasi momento.
+            </p>
+            <a
+              href={`/api/download/${prodotto.id}`}
+              target="_blank"
+              rel="noopener noreferrer"
+              class="inline-flex items-center gap-2 rounded-full px-6 py-3 text-sm font-semibold uppercase tracking-widest transition-all duration-200"
+              style="background-color: var(--gold); color: #0F0D0A;"
+              onmouseover="this.style.opacity='.85'"
+              onmouseout="this.style.opacity='1'"
+            >
+              <svg xmlns="http://www.w3.org/2000/svg" class="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-4l-4 4m0 0l-4-4m4 4V4" />
+              </svg>
+              Scarica il PDF
+            </a>
           </div>
-        ) : (
-          <p class="text-sm italic" style="color: var(--text-muted);">
-            Acquista per accedere al contenuto completo.
-          </p>
         )}
+
+        <!-- CTA mobile (sotto il testo, visibile solo su mobile per chi non ha acquistato) -->
+        {!hasPurchased && (
+          <div class="mt-8 lg:hidden">
+            <a href="#acquisto"
+              class="block w-full rounded-full py-4 text-center text-sm font-bold uppercase tracking-widest transition-all"
+              style="background-color: var(--gold); color: #0F0D0A;">
+              Acquista ora — €{Number(prodotto.prezzo).toFixed(2)}
+            </a>
+          </div>
+        )}
+
       </div>
 
       <!-- ── Colonna destra: riquadro acquisto ───────────────── -->
