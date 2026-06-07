@@ -17,13 +17,13 @@ const { count: bundleCount } = await Astro.locals.supabase
 
 <BaseLayout
   title="Home"
-  description="Ingegneria biologica e neurale per il business d'élite. Protocolli di precisione per chi governa la propria energia biologica e i propri risultati."
+  description="Crescita personale e presenza online. Protocolli digitali Glow-Up, Digital Identity e Bundle di Personal Statement Studio."
 >
 
   <!-- ── HERO ──────────────────────────────────────────────────────────── -->
   <PageHero
-    eyebrow="Personal Statement · Laboratory"
-    subtitle="Riprendi il controllo del tuo sistema. Dalla ricalibrazione ormonale d'élite all'isolamento neuro-chimico. Protocolli di precisione per chi governa la propria energia biologica e i propri risultati."
+    eyebrow="Personal Statement · Studio"
+    subtitle="Protocolli digitali in due percorsi: Glow-Up per migliorare te stesso, Digital Identity per comunicare online. I Bundle uniscono entrambi in un'unica offerta."
     subtitleWide={true}
     ctaText="Accedi ai Protocolli"
     ctaHref="/shop"
@@ -34,8 +34,8 @@ const { count: bundleCount } = await Astro.locals.supabase
       { href: '/blog', label: 'Blog' },
     ]}
   >
-    Ingegneria Biologica e Neurale<br />
-    per il <em class="not-italic font-semibold" style="color: var(--gold);">Business d'Élite</em>.
+    Crescita personale e identità digitale<br />
+    per chi vuole <em class="not-italic font-semibold" style="color: var(--gold);">evolversi</em>.
   </PageHero>
 
   <!-- ── MISSIONE ─────────────────────────────────────────────────────── -->
@@ -45,19 +45,19 @@ const { count: bundleCount } = await Astro.locals.supabase
         La nostra missione
       </p>
       <p class="font-display text-2xl font-light leading-relaxed sm:text-3xl" style="color: var(--text);">
-        Non crediamo nella motivazione, nel sacrificio o nel conteggio ossessivo delle calorie.
-        <span class="block mt-3" style="color: var(--gold);">Crediamo nell'intelligenza biologica applicata.</span>
+        Migliorarsi e comunicare online non sono talenti innati.
+        <span class="block mt-3" style="color: var(--gold);">Sono competenze che si costruiscono.</span>
       </p>
       <div class="mx-auto my-10 h-px w-24" style="background-color: var(--gold);"></div>
       <div class="space-y-5 text-left text-base leading-relaxed sm:text-center" style="color: var(--text-muted);">
         <p>
-          La missione di Personal Statement è fornire l'architettura per operare all'eccellenza metabolica.
-          Trasformiamo la mente reattiva in una <strong style="color: var(--gold);">mente direttiva</strong>,
-          azzerando il debito biologico accumulato e ripristinando l'omeostasi strutturale.
+          Personal Statement offre <strong style="color: var(--gold);">protocolli digitali</strong> —
+          guide strutturate su crescita personale, immagine, abitudini e presenza sui social.
+          Niente contenuti generici: solo indicazioni chiare su <strong style="color: var(--text);">cosa fare e come farlo</strong>.
         </p>
         <p>
-          Il tuo corpo e la tua mente erano già progettati per funzionare alla perfezione:
-          <strong style="color: var(--text);"> noi ti forniamo le istruzioni per ripristinarli.</strong>
+          Che tu voglia lavorare su te stesso, sulla tua comunicazione online o su entrambi,
+          trovi il percorso giusto nel vault.
         </p>
       </div>
     </div>
@@ -67,28 +67,28 @@ const { count: bundleCount } = await Astro.locals.supabase
   <section class="py-24 px-6">
     <div class="mx-auto max-w-6xl">
       <p class="mb-4 text-center text-xs font-semibold uppercase tracking-[0.3em]" style="color: var(--gold);">
-        Perché sceglierci
+        I tre percorsi
       </p>
       <h2 class="font-display mb-16 text-center text-3xl font-light sm:text-4xl" style="color: var(--text);">
-        Precisione. Nessun compromesso.
+        Dentro. Fuori. <em class="not-italic font-semibold" style="color: var(--gold);">Insieme.</em>
       </h2>
 
       <div class="grid gap-8 sm:grid-cols-3">
         {[
           {
             num: '01',
-            title: 'Rifiuto del Compromesso',
-            desc: 'Nessuna restrizione punitiva e nessun conteggio ossessivo — solo precisione ormonale e controllo metabolico d\'élite.',
+            title: 'Glow-Up',
+            desc: 'Crescita personale e miglioramento: abitudini, mindset, immagine e consigli per vedersi e sentirsi meglio ogni giorno.',
           },
           {
             num: '02',
-            title: 'Protezione della Mente Direttiva',
-            desc: 'Insegniamo a sbloccare il controllo neurale e a intercettare il sequestro emotivo prima che comprometta le tue decisioni.',
+            title: 'Digital Identity',
+            desc: 'Presenza online e social media: cosa postare, come scrivere caption efficaci e costruire un\'identità digitale riconoscibile.',
           },
           {
             num: '03',
-            title: 'Produttività Neuroscientifica',
-            desc: 'Non offriamo gestione del tempo, ma ingegneria della concentrazione per creare slot di lavoro blindati e ad alto impatto.',
+            title: 'Bundle',
+            desc: 'Pacchetti che uniscono guide Glow-Up e Digital Identity. Più contenuti, un solo acquisto, prezzo scontato.',
           },
         ].map((item) => (
           <div
@@ -110,15 +110,15 @@ const { count: bundleCount } = await Astro.locals.supabase
   <section class="py-24 px-6" style="background-color: var(--bg-surface);">
     <div class="mx-auto max-w-6xl">
       <p class="mb-4 text-center text-xs font-semibold uppercase tracking-[0.3em]" style="color: var(--gold);">
-        Protocolli di precisione
+        Il vault digitale
       </p>
       <h2 class="font-display mb-4 text-center text-3xl font-light sm:text-4xl" style="color: var(--text);">
-        Il vault esclusivo.<br />
-        <em class="not-italic font-semibold" style="color: var(--gold);">Accesso riservato.</em>
+        Scegli il tuo percorso.<br />
+        <em class="not-italic font-semibold" style="color: var(--gold);">Scarica e applica.</em>
       </h2>
       <p class="mb-16 text-center text-sm max-w-2xl mx-auto leading-relaxed" style="color: var(--text-muted);">
-        Sistemi documentati per decision makers che non possono permettersi di operare a capacità ridotta.
-        Dalla ricalibrazione ormonale all'isolamento neuro-chimico.
+        Ogni protocollo è un prodotto digitale: guide, consigli e strategie pronte da usare.
+        Dopo l'acquisto, i file restano sempre disponibili nella tua area riservata.
       </p>
 
       <div class="grid gap-6 sm:grid-cols-2 lg:grid-cols-3">
@@ -177,22 +177,22 @@ const { count: bundleCount } = await Astro.locals.supabase
   <section class="py-32 px-6 text-center">
     <div class="mx-auto max-w-2xl">
       <p class="font-display mb-6 text-4xl font-light leading-tight sm:text-5xl" style="color: var(--text);">
-        Dichiara il tuo<br />
-        <em class="not-italic font-semibold" style="color: var(--gold);">Standard</em>.
+        Pronto a<br />
+        <em class="not-italic font-semibold" style="color: var(--gold);">iniziare?</em>
       </p>
       <p class="mb-10 text-base leading-relaxed" style="color: var(--text-muted);">
-        Per chi prende decisioni ad alto impatto e rifiuta di operare sotto il proprio potenziale biologico.
-        Il laboratorio è aperto.
+        Esplora i protocolli, scegli il percorso che fa per te e accedi ai contenuti dalla tua area riservata.
+        Per la filosofia dietro il metodo, leggi il Manifesto.
       </p>
       <div class="flex flex-wrap items-center justify-center gap-4">
         <a
-          href="/auth/registrazione"
+          href="/shop"
           class="inline-block rounded-full px-10 py-4 text-sm font-semibold uppercase tracking-widest transition-all"
           style="background-color: var(--gold); color: #0F0D0A;"
           onmouseover="this.style.backgroundColor='var(--gold-hover)'"
           onmouseout="this.style.backgroundColor='var(--gold)'"
         >
-          Dichiara il tuo Standard
+          Accedi ai Protocolli
         </a>
         <a
           href="/manifesto"

@@ -1,7 +1,7 @@
 ---
 import BaseLayout from '../../layouts/BaseLayout.astro';
 import PageHero from '../../components/common/PageHero.astro';
-import { PROTOCOLLI, BUNDLE_HUB } from '../../lib/protocolli';
+import { PROTOCOLLI, BUNDLE_HUB, SHOP_HUB_COPY } from '../../lib/protocolli';
 
 const { data: counts } = await Astro.locals.supabase
   .from('prodotti')
@@ -16,12 +16,12 @@ const { count: bundleCount } = await Astro.locals.supabase
 ---
 
 <BaseLayout
-  title="Protocolli"
-  description="Glow-Up, Digital Identity e Bundle — protocolli di precisione per il business d'élite."
+  title={SHOP_HUB_COPY.title}
+  description={SHOP_HUB_COPY.metaDescription}
 >
   <PageHero
-    eyebrow="Personal Statement · Vault"
-    subtitle="Tre percorsi. Un solo standard. Scegli il protocollo adatto al tuo obiettivo biologico o cognitivo."
+    eyebrow={SHOP_HUB_COPY.eyebrow}
+    subtitle={SHOP_HUB_COPY.heroSubtitle}
     subtitleWide={true}
   >
     Accedi ai <em class="not-italic font-semibold" style="color: var(--gold);">Protocolli</em>.

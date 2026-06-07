@@ -15,7 +15,7 @@ const { data: prodotti } = await Astro.locals.supabase
 ---
 
 <BaseLayout title={protocollo.nome} description={protocollo.descrizione}>
-  <PageHero eyebrow={`Protocollo · ${protocollo.nome}`} subtitle={protocollo.descrizione}>
+  <PageHero eyebrow={`Protocollo · ${protocollo.nome}`} subtitle={protocollo.pageSubtitle}>
     {protocollo.nome}
   </PageHero>
 
