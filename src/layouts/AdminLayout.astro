@@ -95,20 +95,23 @@ const navItems = [
       </div>
     </header>
 
-    <!-- Barra navigazione secondaria admin — pill orizzontali -->
+    <!-- Barra navigazione secondaria admin — scorrevole su mobile -->
     <nav
-      class="flex items-center justify-center gap-2 border-b px-6 py-3 transition-colors duration-200"
+      class="border-b transition-colors duration-200"
       style="border-color: var(--border); background-color: color-mix(in srgb, var(--surface) 40%, transparent);"
     >
-      {navItems.map((item) => (
-        <a
-          href={item.href}
-          class="nav-pill"
-          style={activeNav === item.id ? 'color: var(--gold); border-color: var(--gold);' : ''}
-        >
-          {item.label}
-        </a>
-      ))}
+      <div class="flex items-center gap-2 overflow-x-auto px-4 py-3 scrollbar-hide"
+        style="-webkit-overflow-scrolling: touch; scroll-snap-type: x proximity;">
+        {navItems.map((item) => (
+          <a
+            href={item.href}
+            class="nav-pill flex-shrink-0"
+            style={activeNav === item.id ? 'color: var(--gold); border-color: var(--gold);' : ''}
+          >
+            {item.label}
+          </a>
+        ))}
+      </div>
     </nav>
 
     <!-- Contenuto -->

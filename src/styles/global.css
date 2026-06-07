@@ -141,6 +141,10 @@ body {
 ::-webkit-scrollbar-track  { background: var(--bg); }
 ::-webkit-scrollbar-thumb  { background: var(--border); border-radius: 3px; }
 
+/* ─── Nasconde scrollbar orizzontale nel nav admin ───────────────────────────── */
+.scrollbar-hide::-webkit-scrollbar { display: none; }
+.scrollbar-hide { -ms-overflow-style: none; scrollbar-width: none; }
+
 /* ─── Logo full (con sfondo nero integrato) ──────────────────────────────────
    multiply  su sfondo chiaro: il nero del canvas sparisce, l'oro rimane.
    screen    su sfondo scuro:  il nero sparisce, l'oro aggiunge luce calda.  */
