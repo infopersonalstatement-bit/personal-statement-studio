@@ -1,4 +1,9 @@
 ---
+interface NavLink {
+  href: string;
+  label: string;
+}
+
 interface Props {
   eyebrow?: string;
   subtitle?: string;
@@ -8,7 +13,15 @@ interface Props {
   ctaSecondaryText?: string;
   ctaSecondaryHref?: string;
   minHeight?: string;
+  navLinks?: NavLink[];
 }
+
+const DEFAULT_NAV: NavLink[] = [
+  { href: '/',          label: 'Home' },
+  { href: '/manifesto', label: 'Il Manifesto' },
+  { href: '/blog',      label: 'Blog' },
+  { href: '/shop',      label: 'Prodotti' },
+];
 
 const {
   eyebrow,
@@ -19,14 +32,8 @@ const {
   ctaSecondaryText,
   ctaSecondaryHref,
   minHeight = '55vh',
+  navLinks = DEFAULT_NAV,
 } = Astro.props;
-
-const navLinks = [
-  { href: '/',          label: 'Home' },
-  { href: '/manifesto', label: 'Il Manifesto' },
-  { href: '/blog',      label: 'Blog' },
-  { href: '/shop',      label: 'Prodotti' },
-];
 
 const pathname = Astro.url.pathname;
 ---

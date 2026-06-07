@@ -27,9 +27,12 @@ const { count: bundleCount } = await Astro.locals.supabase
     subtitleWide={true}
     ctaText="Accedi ai Protocolli"
     ctaHref="/shop"
-    ctaSecondaryText="Dichiara il tuo Standard"
-    ctaSecondaryHref="/manifesto"
     minHeight="100vh"
+    navLinks={[
+      { href: '/', label: 'Home' },
+      { href: '/manifesto', label: 'Il Manifesto' },
+      { href: '/blog', label: 'Blog' },
+    ]}
   >
     Ingegneria Biologica e Neurale<br />
     per il <em class="not-italic font-semibold" style="color: var(--gold);">Business d'Élite</em>.
