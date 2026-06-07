@@ -1,5 +1,8 @@
 ---
 import BaseLayout from '../../layouts/BaseLayout.astro';
+import AuthCard from '../../components/auth/AuthCard.astro';
+
+const redirectTo = Astro.url.searchParams.get('redirect') ?? '/dashboard';
 
 let errorMsg  = '';
 let successMsg = '';
@@ -19,7 +22,6 @@ if (Astro.request.method === 'POST') {
       email,
       password,
       options: {
-        // Dopo la conferma email, Supabase redirige qui
         emailRedirectTo: `${import.meta.env.PUBLIC_SITE_URL}/auth/callback`,
       },
     });
@@ -33,28 +35,36 @@ if (Astro.request.method === 'POST') {
     }
   }
 }
+
+const loginHref = redirectTo !== '/dashboard'
+  ? `/auth/login?redirect=${encodeURIComponent(redirectTo)}`
+  : '/auth/login';
 ---
 
-<BaseLayout title="Registrati">
-  <section class="mx-auto max-w-md px-6 py-24">
-    <h1 class="mb-2 text-3xl font-bold tracking-tight">Crea account</h1>
-    <p class="mb-8 text-gray-500">Inizia il tuo percorso di crescita.</p>
+<BaseLayout title="Registrati" description="Crea il tuo account Personal Statement Studio e accedi ai protocolli digitali.">
+  <AuthCard title="Crea il tuo account" subtitle="Inizia il tuo percorso">
 
     {errorMsg && (
-      <div class="mb-6 rounded-lg bg-red-50 px-4 py-3 text-sm text-red-600">
+      <div
+        class="mb-6 rounded-xl px-4 py-3 text-sm"
+        style="background-color: color-mix(in srgb, #ef4444 12%, transparent); color: #ef4444; border: 1px solid color-mix(in srgb, #ef4444 30%, transparent);"
+      >
         {errorMsg}
       </div>
     )}
 
     {successMsg ? (
-      <div class="rounded-lg bg-green-50 px-4 py-6 text-center text-sm text-green-700">
-        <p class="mb-1 text-base font-semibold">Email inviata!</p>
-        <p>{successMsg}</p>
+      <div
+        class="rounded-xl px-5 py-6 text-center text-sm"
+        style="background-color: color-mix(in srgb, #22c55e 10%, transparent); color: #4ade80; border: 1px solid color-mix(in srgb, #22c55e 25%, transparent);"
+      >
+        <p class="mb-2 text-base font-semibold" style="color: var(--text);">Email inviata!</p>
+        <p style="color: var(--text-muted);">{successMsg}</p>
       </div>
     ) : (
       <form method="POST" class="space-y-4">
         <div>
-          <label for="email" class="mb-1.5 block text-sm font-medium text-gray-700">
+          <label for="email" class="mb-1.5 block text-xs font-medium uppercase tracking-wider" style="color: var(--text-muted);">
             Email
           </label>
           <input
@@ -63,12 +73,12 @@ if (Astro.request.method === 'POST') {
             type="email"
             required
             autocomplete="email"
-            class="w-full rounded-lg border border-gray-300 px-4 py-2.5 text-sm outline-none transition focus:border-gray-900 focus:ring-2 focus:ring-gray-900/10"
+            class="auth-input"
           />
         </div>
 
         <div>
-          <label for="password" class="mb-1.5 block text-sm font-medium text-gray-700">
+          <label for="password" class="mb-1.5 block text-xs font-medium uppercase tracking-wider" style="color: var(--text-muted);">
             Password
           </label>
           <input
@@ -78,13 +88,13 @@ if (Astro.request.method === 'POST') {
             required
             minlength="8"
             autocomplete="new-password"
-            class="w-full rounded-lg border border-gray-300 px-4 py-2.5 text-sm outline-none transition focus:border-gray-900 focus:ring-2 focus:ring-gray-900/10"
+            class="auth-input"
           />
-          <p class="mt-1 text-xs text-gray-400">Minimo 8 caratteri</p>
+          <p class="mt-1.5 text-xs" style="color: var(--text-muted);">Minimo 8 caratteri</p>
         </div>
 
         <div>
-          <label for="confirm" class="mb-1.5 block text-sm font-medium text-gray-700">
+          <label for="confirm" class="mb-1.5 block text-xs font-medium uppercase tracking-wider" style="color: var(--text-muted);">
             Conferma password
           </label>
           <input
@@ -94,24 +104,22 @@ if (Astro.request.method === 'POST') {
             required
             minlength="8"
             autocomplete="new-password"
-            class="w-full rounded-lg border border-gray-300 px-4 py-2.5 text-sm outline-none transition focus:border-gray-900 focus:ring-2 focus:ring-gray-900/10"
+            class="auth-input"
           />
         </div>
 
-        <button
-          type="submit"
-          class="w-full rounded-lg bg-gray-900 py-3 text-sm font-medium text-white transition hover:bg-gray-700"
-        >
+        <button type="submit" class="auth-submit">
           Crea account
         </button>
       </form>
     )}
 
-    <p class="mt-6 text-center text-sm text-gray-500">
+    <p class="mt-6 text-center text-sm" style="color: var(--text-muted);">
       Hai già un account?{' '}
-      <a href="/auth/login" class="font-medium text-gray-900 underline underline-offset-2">
+      <a href={loginHref} class="font-medium underline underline-offset-2 transition-colors" style="color: var(--gold);">
         Accedi
       </a>
     </p>
-  </section>
+
+  </AuthCard>
 </BaseLayout>

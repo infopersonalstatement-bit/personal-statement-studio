@@ -1,0 +1,53 @@
+---
+interface Props {
+  title: string;
+  subtitle?: string;
+}
+
+const { title, subtitle } = Astro.props;
+---
+
+<section class="relative flex min-h-[calc(100vh-61px)] flex-col items-center justify-center px-6 py-16 pb-24">
+  <div
+    class="pointer-events-none absolute inset-0"
+    style="background: radial-gradient(ellipse 80% 60% at 50% 0%, color-mix(in srgb, var(--gold) 14%, transparent) 0%, transparent 70%);"
+  ></div>
+
+  <div
+    class="relative w-full max-w-md rounded-2xl border p-8 shadow-sm sm:p-10"
+    style="border-color: var(--border); background-color: color-mix(in srgb, var(--bg-card) 94%, transparent); box-shadow: 0 24px 48px color-mix(in srgb, var(--bg) 40%, transparent);"
+  >
+    <a href="/" class="mb-8 flex flex-col items-center gap-3 transition-opacity hover:opacity-90" aria-label="Torna alla home">
+      <img
+        src="/logo-full.png"
+        alt="Personal Statement Studio"
+        class="logo-full w-40 sm:w-48"
+      />
+    </a>
+
+    <div class="mb-8 text-center">
+      <h1 class="font-display text-2xl font-light sm:text-3xl" style="color: var(--text);">
+        {title}
+      </h1>
+      {subtitle && (
+        <p class="mt-2 text-xs uppercase tracking-[0.25em]" style="color: var(--text-muted);">
+          {subtitle}
+        </p>
+      )}
+    </div>
+
+    <slot />
+
+    <p class="mt-8 text-center">
+      <a
+        href="/"
+        class="text-xs uppercase tracking-widest transition-colors"
+        style="color: var(--text-muted);"
+        onmouseover="this.style.color='var(--gold)'"
+        onmouseout="this.style.color='var(--text-muted)'"
+      >
+        ← Torna al sito
+      </a>
+    </p>
+  </div>
+</section>
