@@ -1,7 +1,6 @@
 ---
 import '../styles/global.css';
 import ThemeToggle from '../components/common/ThemeToggle.astro';
-import SocialHeader from '../components/common/SocialHeader.astro';
 import SocialSticky from '../components/common/SocialSticky.astro';
 import Analytics from '@vercel/analytics/astro';
 
@@ -83,11 +82,11 @@ const ogImageAbsolute = ogImage.startsWith('http') ? ogImage : `${siteUrl}${ogIm
          ║  Logo (→ home) a sinistra · Toggle + Accedi a destra     ║
          ╚══════════════════════════════════════════════════════════════╝ -->
     <header
-      class="fixed left-0 right-0 top-0 z-[100] relative flex items-center justify-between px-6 py-3 backdrop-blur-md transition-colors duration-200"
+      class="fixed left-0 right-0 top-0 z-[100] flex items-center justify-between px-6 py-3 backdrop-blur-md transition-colors duration-200"
       style="background-color: color-mix(in srgb, var(--bg) 82%, transparent); border-bottom: 1px solid var(--border);"
     >
       <!-- Logo → home -->
-      <a href="/" class="group relative z-10 flex items-center gap-3" aria-label="Torna alla home">
+      <a href="/" class="group flex items-center gap-3" aria-label="Torna alla home">
         <img
           src="/logo.png"
           alt="Personal Statement Studio"
@@ -100,12 +99,8 @@ const ogImageAbsolute = ogImage.startsWith('http') ? ogImage : `${siteUrl}${ogIm
         </span>
       </a>
 
-      <div class="pointer-events-none absolute left-1/2 top-1/2 z-0 -translate-x-1/2 -translate-y-1/2">
-        <SocialHeader />
-      </div>
-
       <!-- Actions -->
-      <div class="relative z-10 flex items-center gap-2">
+      <div class="flex items-center gap-2">
         <ThemeToggle />
         {user ? (
           <a

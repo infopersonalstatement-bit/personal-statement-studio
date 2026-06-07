@@ -2,9 +2,9 @@
 import { SOCIAL_LINKS } from '../../lib/social-links';
 ---
 
-<!-- Mobile: barra fissa in basso -->
+<!-- Barra social fissa in basso — tutti i dispositivi -->
 <nav
-  class="social-sticky-mobile fixed bottom-0 left-0 right-0 z-[90] flex items-center justify-center gap-4 border-t px-4 py-2.5 backdrop-blur-md md:hidden"
+  class="social-sticky-bar fixed bottom-0 left-0 right-0 z-[90] flex items-center justify-center gap-4 border-t px-4 py-2.5 backdrop-blur-md"
   style="border-color: var(--border); background-color: color-mix(in srgb, var(--bg) 88%, transparent); padding-bottom: max(0.625rem, env(safe-area-inset-bottom));"
   aria-label="Seguici sui social"
 >
@@ -60,10 +60,8 @@ import { SOCIAL_LINKS } from '../../lib/social-links';
 </style>
 
 <style is:global>
-  @media (max-width: 767px) {
-    body.has-social-sticky {
-      padding-bottom: 4.25rem;
-    }
+  body.has-social-sticky {
+    padding-bottom: 4.25rem;
   }
 </style>
 

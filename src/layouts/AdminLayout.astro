@@ -1,7 +1,6 @@
 ---
 import '../styles/global.css';
 import ThemeToggle from '../components/common/ThemeToggle.astro';
-import SocialHeader from '../components/common/SocialHeader.astro';
 import SocialSticky from '../components/common/SocialSticky.astro';
 
 const user = Astro.locals.user;
@@ -58,10 +57,10 @@ const navItems = [
 
     <!-- Top bar -->
     <header
-      class="sticky top-0 z-50 relative flex items-center justify-between px-6 py-3 backdrop-blur-md transition-colors duration-200"
+      class="sticky top-0 z-50 flex items-center justify-between px-6 py-3 backdrop-blur-md transition-colors duration-200"
       style="background-color: color-mix(in srgb, var(--bg) 85%, transparent); border-bottom: 1px solid var(--border);"
     >
-      <div class="relative z-10 flex items-center gap-3">
+      <div class="flex items-center gap-3">
         <a href="/" aria-label="Home">
           <img src="/logo.png" alt="" class="h-9 w-auto opacity-80 hover:opacity-100 transition-opacity"
             style="filter: drop-shadow(0 2px 8px color-mix(in srgb, var(--gold) 40%, transparent));" />
@@ -72,11 +71,7 @@ const navItems = [
         </div>
       </div>
 
-      <div class="pointer-events-none absolute left-1/2 top-1/2 z-0 -translate-x-1/2 -translate-y-1/2">
-        <SocialHeader />
-      </div>
-
-      <div class="relative z-10 flex items-center gap-3">
+      <div class="flex items-center gap-3">
         <span class="hidden sm:block text-xs uppercase tracking-widest" style="color: var(--text-muted);">{user.email}</span>
         <ThemeToggle />
         <a
