@@ -21,7 +21,8 @@ const {
 const user = Astro.locals.user;
 const siteUrl = (import.meta.env.PUBLIC_SITE_URL || '').replace(/\/$/, '');
 const canonicalURL = new URL(Astro.url.pathname, siteUrl || 'https://personalstatementstudio.com');
-const ogImageAbsolute = ogImage.startsWith('http') ? ogImage : `${siteUrl}${ogImage}`;
+const ogImagePath = ogImage || '/og-default.jpg';
+const ogImageAbsolute = ogImagePath.startsWith('http') ? ogImagePath : `${siteUrl}${ogImagePath}`;
 ---
 
 <!doctype html>

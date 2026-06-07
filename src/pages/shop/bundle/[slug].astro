@@ -25,10 +25,14 @@ if (bySlug) {
 
 if (!bundle) return Astro.redirect('/shop/bundle');
 
-const { data: bundleItems } = await Astro.locals.supabase
+const { data: bundleItems, error: bundleItemsErr } = await Astro.locals.supabase
   .from('bundle_prodotti')
   .select('prodotti(id, nome, descrizione, prezzo, slug, protocollo)')
   .eq('bundle_id', bundle.id);
+
+if (bundleItemsErr) {
+  console.error('[bundle] Errore caricamento prodotti:', bundleItemsErr.message);
+}
 
 const prodottiInclusi = (bundleItems ?? []).map((r: any) => r.prodotti).filter(Boolean);
 const productIds = prodottiInclusi.map((p: any) => p.id);
@@ -50,11 +54,12 @@ const percentualeSconto = prezzoOriginale
 
 const metaTitle = bundle.seo_titolo || bundle.nome;
 const metaDescription = bundle.seo_descrizione || bundle.descrizione || '';
+const metaOgImage = bundle.seo_og_image || undefined;
 const bundleUrl = bundle.slug ? `/shop/bundle/${bundle.slug}` : `/shop/bundle/${bundle.id}`;
 const paypalClientId = import.meta.env.PAYPAL_CLIENT_ID;
 ---
 
-<BaseLayout title={metaTitle} description={metaDescription} ogImage={bundle.seo_og_image} ogType="product">
+<BaseLayout title={metaTitle} description={metaDescription} ogImage={metaOgImage} ogType="product">
 
   <section class="relative flex flex-col items-center justify-center overflow-hidden px-6 py-16 text-center" style="min-height: 30vh;">
     <div class="pointer-events-none absolute inset-0"
@@ -145,7 +150,7 @@ const paypalClientId = import.meta.env.PAYPAL_CLIENT_ID;
   </article>
 </BaseLayout>
 
-{user && !hasPurchased && (
+{user && !hasPurchased && paypalClientId && (
   <>
     <script is:inline src={`https://www.paypal.com/sdk/js?client-id=${paypalClientId}&currency=EUR`}></script>
     <script is:inline define:vars={{ bundleId: bundle.id }}>
