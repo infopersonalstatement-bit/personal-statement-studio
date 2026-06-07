@@ -1,6 +1,7 @@
 ---
 import '../styles/global.css';
 import ThemeToggle from '../components/common/ThemeToggle.astro';
+import SocialHeader from '../components/common/SocialHeader.astro';
 import SocialSticky from '../components/common/SocialSticky.astro';
 
 const user = Astro.locals.user;
@@ -73,6 +74,7 @@ const navItems = [
 
       <div class="flex items-center gap-3">
         <span class="hidden sm:block text-xs uppercase tracking-widest" style="color: var(--text-muted);">{user.email}</span>
+        <SocialHeader />
         <ThemeToggle />
         <a
           href="/dashboard"
@@ -116,8 +118,6 @@ const navItems = [
       </div>
     </nav>
 
-    <SocialSticky />
-
     <!-- Contenuto -->
     <main class="flex-1 px-6 py-10 sm:px-10 max-w-5xl mx-auto w-full">
       <div class="mb-10 border-b pb-6" style="border-color: var(--border);">
@@ -132,5 +132,6 @@ const navItems = [
       © {new Date().getFullYear()} Personal Statement Studio · Admin
     </footer>
 
+    <SocialSticky />
   </body>
 </html>

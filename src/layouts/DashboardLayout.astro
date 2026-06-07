@@ -1,6 +1,7 @@
 ---
 import '../styles/global.css';
 import ThemeToggle from '../components/common/ThemeToggle.astro';
+import SocialHeader from '../components/common/SocialHeader.astro';
 import SocialSticky from '../components/common/SocialSticky.astro';
 
 const user = Astro.locals.user;
@@ -81,6 +82,7 @@ const navItems = [
         <span class="hidden sm:block text-xs tracking-wide" style="color: var(--text-muted);">
           {displayName}
         </span>
+        <SocialHeader />
         <ThemeToggle />
         <form action="/api/auth/signout" method="POST">
           <button
@@ -112,8 +114,6 @@ const navItems = [
       ))}
     </nav>
 
-    <SocialSticky />
-
     <!-- Contenuto principale -->
     <main class="flex-1 px-6 py-10 sm:px-10 max-w-5xl mx-auto w-full">
 
@@ -140,5 +140,6 @@ const navItems = [
       </a>
     </footer>
 
+    <SocialSticky />
   </body>
 </html>

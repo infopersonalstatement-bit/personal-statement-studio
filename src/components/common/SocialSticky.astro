@@ -1,37 +1,6 @@
 ---
-const SOCIAL_LINKS = [
-  {
-    href: 'https://www.instagram.com/personalstatementstudio/',
-    label: 'Instagram — Personal Statement Studio',
-    icon: '/logo-ig.png',
-  },
-  {
-    href: 'https://it.pinterest.com/ilestatement/',
-    label: 'Pinterest — Personal Statement Studio',
-    icon: '/logo-pint.png',
-  },
-];
+import { SOCIAL_LINKS } from '../../lib/social-links';
 ---
-
-<!-- Desktop: colonna fissa a destra -->
-<aside
-  class="social-sticky-desktop fixed right-4 top-1/2 z-[90] hidden -translate-y-1/2 flex-col items-center gap-3 md:flex"
-  aria-label="Seguici sui social"
->
-  <p class="social-sticky-label social-sticky-label--desktop">I Social</p>
-  {SOCIAL_LINKS.map((link) => (
-    <a
-      href={link.href}
-      target="_blank"
-      rel="noopener noreferrer"
-      aria-label={link.label}
-      title={link.label}
-      class="social-sticky-link"
-    >
-      <img src={link.icon} alt="" width="44" height="44" loading="lazy" decoding="async" />
-    </a>
-  ))}
-</aside>
 
 <!-- Mobile: barra fissa in basso -->
 <nav
@@ -39,7 +8,7 @@ const SOCIAL_LINKS = [
   style="border-color: var(--border); background-color: color-mix(in srgb, var(--bg) 88%, transparent); padding-bottom: max(0.625rem, env(safe-area-inset-bottom));"
   aria-label="Seguici sui social"
 >
-  <span class="social-sticky-label social-sticky-label--mobile">I Social</span>
+  <span class="social-sticky-label">I Social</span>
   <div class="flex items-center gap-5">
     {SOCIAL_LINKS.map((link) => (
       <a
@@ -48,7 +17,7 @@ const SOCIAL_LINKS = [
         rel="noopener noreferrer"
         aria-label={link.label}
         title={link.label}
-        class="social-sticky-link social-sticky-link--mobile"
+        class="social-sticky-link"
       >
         <img src={link.icon} alt="" width="36" height="36" loading="lazy" decoding="async" />
       </a>
@@ -64,17 +33,6 @@ const SOCIAL_LINKS = [
     letter-spacing: 0.2em;
     color: var(--gold);
     white-space: nowrap;
-  }
-
-  .social-sticky-label--desktop {
-    margin-bottom: 0.125rem;
-    padding-bottom: 0.5rem;
-    border-bottom: 1px solid var(--border);
-    width: 100%;
-    text-align: center;
-  }
-
-  .social-sticky-label--mobile {
     padding-right: 0.75rem;
     border-right: 1px solid var(--border);
   }
@@ -94,15 +52,10 @@ const SOCIAL_LINKS = [
 
   .social-sticky-link img {
     display: block;
-    width: 2.75rem;
-    height: 2.75rem;
-    border-radius: 9999px;
-    object-fit: cover;
-  }
-
-  .social-sticky-link--mobile img {
     width: 2.25rem;
     height: 2.25rem;
+    border-radius: 9999px;
+    object-fit: cover;
   }
 </style>
 

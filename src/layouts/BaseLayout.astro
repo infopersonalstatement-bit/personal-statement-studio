@@ -1,6 +1,7 @@
 ---
 import '../styles/global.css';
 import ThemeToggle from '../components/common/ThemeToggle.astro';
+import SocialHeader from '../components/common/SocialHeader.astro';
 import SocialSticky from '../components/common/SocialSticky.astro';
 import Analytics from '@vercel/analytics/astro';
 
@@ -101,6 +102,7 @@ const ogImageAbsolute = ogImage.startsWith('http') ? ogImage : `${siteUrl}${ogIm
 
       <!-- Actions -->
       <div class="flex items-center gap-2">
+        <SocialHeader />
         <ThemeToggle />
         {user ? (
           <a
@@ -124,8 +126,6 @@ const ogImageAbsolute = ogImage.startsWith('http') ? ogImage : `${siteUrl}${ogIm
 
     <!-- Spacer per compensare la top bar fixed -->
     <div class="h-[61px]"></div>
-
-    <SocialSticky />
 
     <main class="flex-1">
       <slot />
@@ -181,6 +181,7 @@ const ogImageAbsolute = ogImage.startsWith('http') ? ogImage : `${siteUrl}${ogIm
       </div>
     </footer>
 
+  <SocialSticky />
   <Analytics />
   </body>
 </html>
