@@ -1,0 +1,172 @@
+---
+import BaseLayout from '../../../layouts/BaseLayout.astro';
+import PageHero from '../../../components/common/PageHero.astro';
+
+const { data: prodotti } = await Astro.locals.supabase
+  .from('prodotti')
+  .select('id, nome, prezzo, prezzo_originale, descrizione, slug')
+  .order('created_at', { ascending: false })
+  .limit(4);
+---
+
+<BaseLayout
+  title="Home"
+  description="Non produciamo contenuti. Costruiamo percezione. Strumenti strategici per imprenditori, creator e professionisti."
+>
+
+  <!-- ── HERO ──────────────────────────────────────────────────────────── -->
+  <PageHero
+    subtitle="Non produciamo contenuti. Costruiamo percezione."
+    minHeight="100vh"
+  >
+    Molti brand postano.<br />
+    <em class="not-italic font-semibold" style="color: var(--gold);">Pochi si posizionano</em><br />
+    per davvero.
+  </PageHero>
+
+  <!-- ── DICHIARAZIONE ──────────────────────────────────────────────────── -->
+  <section class="py-20" style="background-color: var(--bg-surface);">
+    <div class="mx-auto max-w-4xl px-6 text-center">
+      <p class="font-display text-3xl font-light leading-relaxed sm:text-4xl" style="color: var(--text);">
+        "Profili confusi. Estetica debole. Messaggi poco chiari.<br />
+        Presenza online che non riflette il loro <em>vero valore</em>."
+      </p>
+      <div class="mx-auto mt-8 h-px w-24" style="background-color: var(--gold);"></div>
+      <p class="mt-8 text-base leading-relaxed" style="color: var(--text-muted);">
+        Trasformiamo tutto questo in posizionamento definito, identità e presenza digitale coerente.<br />
+        <strong style="color: var(--text);">La crescita non è casuale. È il risultato di elementi che lavorano in perfetta coerenza.</strong>
+      </p>
+    </div>
+  </section>
+
+  <!-- ── METODO: 3 PILASTRI ─────────────────────────────────────────────── -->
+  <section class="py-24 px-6">
+    <div class="mx-auto max-w-6xl">
+      <p class="mb-4 text-center text-xs font-semibold uppercase tracking-[0.3em]" style="color: var(--gold);">
+        Come creiamo percezione
+      </p>
+      <h2 class="font-display mb-16 text-center text-3xl font-light sm:text-4xl" style="color: var(--text);">
+        Ogni elemento ha un obiettivo preciso.
+      </h2>
+
+      <div class="grid gap-8 sm:grid-cols-3">
+        {[
+          {
+            num: '01',
+            title: 'Identità',
+            desc: 'Riallineiamo la tua identità in una presenza chiara, strategica e riconoscibile. Che tu sia imprenditore, sportivo, creator o professionista.',
+          },
+          {
+            num: '02',
+            title: 'Strategia',
+            desc: 'Ogni immagine, ogni scelta ha un obiettivo: incrementare il valore e la percezione del brand e attirare i clienti giusti.',
+          },
+          {
+            num: '03',
+            title: 'Strumenti',
+            desc: 'Risorse pratiche progettate per chi ha poco tempo. Non contenuti generici — sistemi strutturati con chiarezza chirurgica.',
+          },
+        ].map((item) => (
+          <div
+            class="group rounded-2xl border p-8 transition-all duration-300"
+            style="border-color: var(--border); background-color: var(--bg-card);"
+            onmouseover="this.style.borderColor='var(--gold)'"
+            onmouseout="this.style.borderColor='var(--border)'"
+          >
+            <p class="mb-4 font-display text-4xl font-light" style="color: var(--gold);">{item.num}</p>
+            <h3 class="mb-3 text-lg font-semibold uppercase tracking-widest" style="color: var(--text);">{item.title}</h3>
+            <p class="text-sm leading-relaxed" style="color: var(--text-muted);">{item.desc}</p>
+          </div>
+        ))}
+      </div>
+    </div>
+  </section>
+
+  <!-- ── PRODOTTI IN EVIDENZA ───────────────────────────────────────────── -->
+  <section class="py-24 px-6" style="background-color: var(--bg-surface);">
+    <div class="mx-auto max-w-6xl">
+      <p class="mb-4 text-center text-xs font-semibold uppercase tracking-[0.3em]" style="color: var(--gold);">
+        Prodotti digitali
+      </p>
+      <h2 class="font-display mb-4 text-center text-3xl font-light sm:text-4xl" style="color: var(--text);">
+        Non contenuti generici.<br />
+        <em class="not-italic font-semibold" style="color: var(--gold);">Sistemi strutturati.</em>
+      </h2>
+      <p class="mb-16 text-center text-sm" style="color: var(--text-muted);">
+        Strumenti pratici progettati per chi ha poco tempo e ha bisogno di risultati immediati.
+      </p>
+
+      {prodotti && prodotti.length > 0 ? (
+        <div class="grid gap-6 sm:grid-cols-2 lg:grid-cols-4">
+          {prodotti.map((p: any) => (
+            <a
+              href={`/shop/${p.slug ?? p.id}`}
+              class="group flex flex-col rounded-2xl border p-6 transition-all duration-300"
+              style="border-color: var(--border); background-color: var(--bg-card);"
+              onmouseover="this.style.borderColor='var(--gold)'"
+              onmouseout="this.style.borderColor='var(--border)'"
+            >
+              <h3 class="mb-3 text-sm font-semibold leading-snug" style="color: var(--text);">{p.nome}</h3>
+              {p.descrizione && (
+                <p class="mb-4 flex-1 text-xs leading-relaxed line-clamp-3" style="color: var(--text-muted);">{p.descrizione}</p>
+              )}
+              <div class="flex flex-wrap items-baseline gap-2">
+                <p class="font-display text-2xl font-light" style="color: var(--gold);">€{Number(p.prezzo).toFixed(2)}</p>
+                {p.prezzo_originale && p.prezzo_originale > p.prezzo && (
+                  <>
+                    <span class="font-display text-sm line-through" style="color: var(--text-muted);">
+                      €{Number(p.prezzo_originale).toFixed(2)}
+                    </span>
+                    <span class="rounded-full px-2 py-0.5 text-[10px] font-bold uppercase"
+                      style="background-color: color-mix(in srgb, var(--gold) 15%, transparent); color: var(--gold);">
+                      -{Math.round((1 - p.prezzo / p.prezzo_originale) * 100)}%
+                    </span>
+                  </>
+                )}
+              </div>
+            </a>
+          ))}
+        </div>
+      ) : (
+        <p class="text-center text-sm" style="color: var(--text-muted);">
+          I prodotti saranno disponibili a breve.
+        </p>
+      )}
+
+      <div class="mt-12 text-center">
+        <a
+          href="/shop"
+          class="inline-block rounded-full border px-8 py-3 text-xs font-semibold uppercase tracking-widest transition-all"
+          style="border-color: var(--gold); color: var(--gold);"
+          onmouseover="this.style.backgroundColor='var(--gold)'; this.style.color='#0F0D0A'"
+          onmouseout="this.style.backgroundColor='transparent'; this.style.color='var(--gold)'"
+        >
+          Vieni a dare un'occhiata →
+        </a>
+      </div>
+    </div>
+  </section>
+
+  <!-- ── CTA FINALE ─────────────────────────────────────────────────────── -->
+  <section class="py-32 px-6 text-center">
+    <div class="mx-auto max-w-2xl">
+      <p class="font-display mb-6 text-4xl font-light leading-tight sm:text-5xl" style="color: var(--text);">
+        Pronto a costruire<br />
+        il tuo <em class="not-italic font-semibold" style="color: var(--gold);">Statement</em>?
+      </p>
+      <p class="mb-10 text-base" style="color: var(--text-muted);">
+        Iniziamo a trasformare la tua identità in una presenza chiara, strategica e riconoscibile.
+      </p>
+      <a
+        href="/auth/registrazione"
+        class="inline-block rounded-full px-10 py-4 text-sm font-semibold uppercase tracking-widest transition-all"
+        style="background-color: var(--gold); color: #0F0D0A;"
+        onmouseover="this.style.backgroundColor='var(--gold-hover)'"
+        onmouseout="this.style.backgroundColor='var(--gold)'"
+      >
+        Inizia ora
+      </a>
+    </div>
+  </section>
+
+</BaseLayout>

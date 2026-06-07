@@ -2,16 +2,22 @@
 interface Props {
   eyebrow?: string;
   subtitle?: string;
+  subtitleWide?: boolean;
   ctaText?: string;
   ctaHref?: string;
+  ctaSecondaryText?: string;
+  ctaSecondaryHref?: string;
   minHeight?: string;
 }
 
 const {
   eyebrow,
   subtitle,
+  subtitleWide = false,
   ctaText,
   ctaHref,
+  ctaSecondaryText,
+  ctaSecondaryHref,
   minHeight = '55vh',
 } = Astro.props;
 
@@ -56,10 +62,37 @@ const pathname = Astro.url.pathname;
   </div>
 
   {subtitle && (
-    <p class="mx-auto mt-6 max-w-xl text-center text-base leading-relaxed sm:text-lg" style="color: var(--text-muted);">
+    <p
+      class:list={[
+        'mx-auto mt-6 text-center text-base leading-relaxed sm:text-lg',
+        subtitleWide ? 'max-w-3xl' : 'max-w-xl',
+      ]}
+      style="color: var(--text-muted);"
+    >
       {subtitle}
     </p>
   )}
+
+  {(ctaText && ctaHref) || (ctaSecondaryText && ctaSecondaryHref) ? (
+    <div class="mt-8 flex flex-wrap items-center justify-center gap-4">
+      {ctaText && ctaHref && (
+        <a href={ctaHref} class="cta-main">
+          {ctaText}
+        </a>
+      )}
+      {ctaSecondaryText && ctaSecondaryHref && (
+        <a
+          href={ctaSecondaryHref}
+          class="inline-block rounded-full border px-8 py-3 text-xs font-semibold uppercase tracking-widest transition-all"
+          style="border-color: var(--gold); color: var(--gold);"
+          onmouseover="this.style.backgroundColor='var(--gold)'; this.style.color='#0F0D0A'"
+          onmouseout="this.style.backgroundColor='transparent'; this.style.color='var(--gold)'"
+        >
+          {ctaSecondaryText}
+        </a>
+      )}
+    </div>
+  ) : null}
 
   <nav class="mt-10 flex flex-wrap items-center justify-center gap-3">
     {navLinks.map(link => {
@@ -80,11 +113,5 @@ const pathname = Astro.url.pathname;
       );
     })}
   </nav>
-
-  {ctaText && ctaHref && (
-    <a href={ctaHref} class="cta-main mt-8">
-      {ctaText}
-    </a>
-  )}
 
 </section>

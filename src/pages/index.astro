@@ -11,60 +11,75 @@ const { data: prodotti } = await Astro.locals.supabase
 
 <BaseLayout
   title="Home"
-  description="Non produciamo contenuti. Costruiamo percezione. Strumenti strategici per imprenditori, creator e professionisti."
+  description="Ingegneria biologica e neurale per il business d'élite. Protocolli di precisione per chi governa la propria energia biologica e i propri risultati."
 >
 
   <!-- ── HERO ──────────────────────────────────────────────────────────── -->
   <PageHero
-    subtitle="Non produciamo contenuti. Costruiamo percezione."
+    eyebrow="Personal Statement · Laboratory"
+    subtitle="Riprendi il controllo del tuo sistema. Dalla ricalibrazione ormonale d'élite all'isolamento neuro-chimico. Protocolli di precisione per chi governa la propria energia biologica e i propri risultati."
+    subtitleWide={true}
+    ctaText="Accedi ai Protocolli"
+    ctaHref="/shop"
+    ctaSecondaryText="Dichiara il tuo Standard"
+    ctaSecondaryHref="/manifesto"
     minHeight="100vh"
   >
-    Molti brand postano.<br />
-    <em class="not-italic font-semibold" style="color: var(--gold);">Pochi si posizionano</em><br />
-    per davvero.
+    Ingegneria Biologica e Neurale<br />
+    per il <em class="not-italic font-semibold" style="color: var(--gold);">Business d'Élite</em>.
   </PageHero>
 
-  <!-- ── DICHIARAZIONE ──────────────────────────────────────────────────── -->
-  <section class="py-20" style="background-color: var(--bg-surface);">
-    <div class="mx-auto max-w-4xl px-6 text-center">
-      <p class="font-display text-3xl font-light leading-relaxed sm:text-4xl" style="color: var(--text);">
-        "Profili confusi. Estetica debole. Messaggi poco chiari.<br />
-        Presenza online che non riflette il loro <em>vero valore</em>."
+  <!-- ── MISSIONE ─────────────────────────────────────────────────────── -->
+  <section class="py-24" style="background-color: var(--bg-surface);">
+    <div class="mx-auto max-w-3xl px-6 text-center">
+      <p class="mb-4 text-xs font-semibold uppercase tracking-[0.3em]" style="color: var(--gold);">
+        La nostra missione
       </p>
-      <div class="mx-auto mt-8 h-px w-24" style="background-color: var(--gold);"></div>
-      <p class="mt-8 text-base leading-relaxed" style="color: var(--text-muted);">
-        Trasformiamo tutto questo in posizionamento definito, identità e presenza digitale coerente.<br />
-        <strong style="color: var(--text);">La crescita non è casuale. È il risultato di elementi che lavorano in perfetta coerenza.</strong>
+      <p class="font-display text-2xl font-light leading-relaxed sm:text-3xl" style="color: var(--text);">
+        Non crediamo nella motivazione, nel sacrificio o nel conteggio ossessivo delle calorie.
+        <span class="block mt-3" style="color: var(--gold);">Crediamo nell'intelligenza biologica applicata.</span>
       </p>
+      <div class="mx-auto my-10 h-px w-24" style="background-color: var(--gold);"></div>
+      <div class="space-y-5 text-left text-base leading-relaxed sm:text-center" style="color: var(--text-muted);">
+        <p>
+          La missione di Personal Statement è fornire l'architettura per operare all'eccellenza metabolica.
+          Trasformiamo la mente reattiva in una <strong style="color: var(--gold);">mente direttiva</strong>,
+          azzerando il debito biologico accumulato e ripristinando l'omeostasi strutturale.
+        </p>
+        <p>
+          Il tuo corpo e la tua mente erano già progettati per funzionare alla perfezione:
+          <strong style="color: var(--text);"> noi ti forniamo le istruzioni per ripristinarli.</strong>
+        </p>
+      </div>
     </div>
   </section>
 
-  <!-- ── METODO: 3 PILASTRI ─────────────────────────────────────────────── -->
+  <!-- ── PILASTRI ───────────────────────────────────────────────────────── -->
   <section class="py-24 px-6">
     <div class="mx-auto max-w-6xl">
       <p class="mb-4 text-center text-xs font-semibold uppercase tracking-[0.3em]" style="color: var(--gold);">
-        Come creiamo percezione
+        Perché sceglierci
       </p>
       <h2 class="font-display mb-16 text-center text-3xl font-light sm:text-4xl" style="color: var(--text);">
-        Ogni elemento ha un obiettivo preciso.
+        Precisione. Nessun compromesso.
       </h2>
 
       <div class="grid gap-8 sm:grid-cols-3">
         {[
           {
             num: '01',
-            title: 'Identità',
-            desc: 'Riallineiamo la tua identità in una presenza chiara, strategica e riconoscibile. Che tu sia imprenditore, sportivo, creator o professionista.',
+            title: 'Rifiuto del Compromesso',
+            desc: 'Nessuna restrizione punitiva e nessun conteggio ossessivo — solo precisione ormonale e controllo metabolico d\'élite.',
           },
           {
             num: '02',
-            title: 'Strategia',
-            desc: 'Ogni immagine, ogni scelta ha un obiettivo: incrementare il valore e la percezione del brand e attirare i clienti giusti.',
+            title: 'Protezione della Mente Direttiva',
+            desc: 'Insegniamo a sbloccare il controllo neurale e a intercettare il sequestro emotivo prima che comprometta le tue decisioni.',
           },
           {
             num: '03',
-            title: 'Strumenti',
-            desc: 'Risorse pratiche progettate per chi ha poco tempo. Non contenuti generici — sistemi strutturati con chiarezza chirurgica.',
+            title: 'Produttività Neuroscientifica',
+            desc: 'Non offriamo gestione del tempo, ma ingegneria della concentrazione per creare slot di lavoro blindati e ad alto impatto.',
           },
         ].map((item) => (
           <div
@@ -74,7 +89,7 @@ const { data: prodotti } = await Astro.locals.supabase
             onmouseout="this.style.borderColor='var(--border)'"
           >
             <p class="mb-4 font-display text-4xl font-light" style="color: var(--gold);">{item.num}</p>
-            <h3 class="mb-3 text-lg font-semibold uppercase tracking-widest" style="color: var(--text);">{item.title}</h3>
+            <h3 class="mb-3 text-sm font-semibold uppercase tracking-widest leading-snug" style="color: var(--text);">{item.title}</h3>
             <p class="text-sm leading-relaxed" style="color: var(--text-muted);">{item.desc}</p>
           </div>
         ))}
@@ -82,18 +97,19 @@ const { data: prodotti } = await Astro.locals.supabase
     </div>
   </section>
 
-  <!-- ── PRODOTTI IN EVIDENZA ───────────────────────────────────────────── -->
+  <!-- ── PROTOCOLLI IN EVIDENZA ─────────────────────────────────────────── -->
   <section class="py-24 px-6" style="background-color: var(--bg-surface);">
     <div class="mx-auto max-w-6xl">
       <p class="mb-4 text-center text-xs font-semibold uppercase tracking-[0.3em]" style="color: var(--gold);">
-        Prodotti digitali
+        Protocolli di precisione
       </p>
       <h2 class="font-display mb-4 text-center text-3xl font-light sm:text-4xl" style="color: var(--text);">
-        Non contenuti generici.<br />
-        <em class="not-italic font-semibold" style="color: var(--gold);">Sistemi strutturati.</em>
+        Il vault esclusivo.<br />
+        <em class="not-italic font-semibold" style="color: var(--gold);">Accesso riservato.</em>
       </h2>
-      <p class="mb-16 text-center text-sm" style="color: var(--text-muted);">
-        Strumenti pratici progettati per chi ha poco tempo e ha bisogno di risultati immediati.
+      <p class="mb-16 text-center text-sm max-w-2xl mx-auto leading-relaxed" style="color: var(--text-muted);">
+        Sistemi documentati per decision makers che non possono permettersi di operare a capacità ridotta.
+        Dalla ricalibrazione ormonale all'isolamento neuro-chimico.
       </p>
 
       {prodotti && prodotti.length > 0 ? (
@@ -129,7 +145,7 @@ const { data: prodotti } = await Astro.locals.supabase
         </div>
       ) : (
         <p class="text-center text-sm" style="color: var(--text-muted);">
-          I prodotti saranno disponibili a breve.
+          I protocolli saranno disponibili a breve.
         </p>
       )}
 
@@ -141,7 +157,7 @@ const { data: prodotti } = await Astro.locals.supabase
           onmouseover="this.style.backgroundColor='var(--gold)'; this.style.color='#0F0D0A'"
           onmouseout="this.style.backgroundColor='transparent'; this.style.color='var(--gold)'"
         >
-          Vieni a dare un'occhiata →
+          Accedi ai Protocolli →
         </a>
       </div>
     </div>
@@ -151,21 +167,33 @@ const { data: prodotti } = await Astro.locals.supabase
   <section class="py-32 px-6 text-center">
     <div class="mx-auto max-w-2xl">
       <p class="font-display mb-6 text-4xl font-light leading-tight sm:text-5xl" style="color: var(--text);">
-        Pronto a costruire<br />
-        il tuo <em class="not-italic font-semibold" style="color: var(--gold);">Statement</em>?
+        Dichiara il tuo<br />
+        <em class="not-italic font-semibold" style="color: var(--gold);">Standard</em>.
       </p>
-      <p class="mb-10 text-base" style="color: var(--text-muted);">
-        Iniziamo a trasformare la tua identità in una presenza chiara, strategica e riconoscibile.
+      <p class="mb-10 text-base leading-relaxed" style="color: var(--text-muted);">
+        Per chi prende decisioni ad alto impatto e rifiuta di operare sotto il proprio potenziale biologico.
+        Il laboratorio è aperto.
       </p>
-      <a
-        href="/auth/registrazione"
-        class="inline-block rounded-full px-10 py-4 text-sm font-semibold uppercase tracking-widest transition-all"
-        style="background-color: var(--gold); color: #0F0D0A;"
-        onmouseover="this.style.backgroundColor='var(--gold-hover)'"
-        onmouseout="this.style.backgroundColor='var(--gold)'"
-      >
-        Inizia ora
-      </a>
+      <div class="flex flex-wrap items-center justify-center gap-4">
+        <a
+          href="/auth/registrazione"
+          class="inline-block rounded-full px-10 py-4 text-sm font-semibold uppercase tracking-widest transition-all"
+          style="background-color: var(--gold); color: #0F0D0A;"
+          onmouseover="this.style.backgroundColor='var(--gold-hover)'"
+          onmouseout="this.style.backgroundColor='var(--gold)'"
+        >
+          Dichiara il tuo Standard
+        </a>
+        <a
+          href="/manifesto"
+          class="inline-block rounded-full border px-8 py-4 text-sm font-semibold uppercase tracking-widest transition-all"
+          style="border-color: var(--gold); color: var(--gold);"
+          onmouseover="this.style.backgroundColor='var(--gold)'; this.style.color='#0F0D0A'"
+          onmouseout="this.style.backgroundColor='transparent'; this.style.color='var(--gold)'"
+        >
+          Leggi il Manifesto
+        </a>
+      </div>
     </div>
   </section>
 
