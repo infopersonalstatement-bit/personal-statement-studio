@@ -211,6 +211,27 @@ const { data: articoli, error: listErr } = await supabase
     ['clean'],
   ];
 
+  function fileExt(name) {
+    return (name.split('.').pop() || 'jpg').toLowerCase();
+  }
+
+  function fileToB64(file) {
+    return new Promise(function(resolve, reject) {
+      var reader = new FileReader();
+      reader.onload = function() { resolve(String(reader.result).split(',')[1]); };
+      reader.onerror = reject;
+      reader.readAsDataURL(file);
+    });
+  }
+
+  async function parseApiResponse(res) {
+    var text = await res.text();
+    try { return { ok: res.ok, data: JSON.parse(text) }; }
+    catch (e) {
+      throw new Error(res.status === 403 ? 'Bloccato dal firewall Vercel — riprova tra poco' : (text.slice(0, 120) || 'Errore server'));
+    }
+  }
+
   const quill = new Quill('#editor-contenuto', {
     theme: 'snow',
     placeholder: 'Inizia a scrivere il tuo articolo…',
@@ -238,19 +259,14 @@ const { data: articoli, error: listErr } = await supabase
       if (msgEl) { msgEl.className = 'mt-3 text-sm'; msgEl.style.color = 'var(--text-muted)'; msgEl.textContent = 'Salvataggio in corso…'; msgEl.classList.remove('hidden'); }
 
       try {
-        // Upload OG image se presente
-        let seoOgImage = (form.querySelector('input[name="seo_og_image_url"]') as HTMLInputElement)?.value?.trim() || '';
         const ogFile = (form.querySelector('input[name="seo_og_image_file"]') as HTMLInputElement)?.files?.[0];
         const uploadPanel = document.getElementById('og-panel-upload');
         const isUploadTab = uploadPanel && !uploadPanel.classList.contains('hidden');
-
+        let ogImageB64 = null;
+        let ogImageExt = null;
         if (isUploadTab && ogFile && ogFile.size > 0) {
-          const fd = new FormData();
-          fd.append('file', ogFile);
-          const upRes = await fetch('/api/admin/og-image', { method: 'POST', body: fd });
-          const upData = await upRes.json();
-          if (!upRes.ok) throw new Error(upData.error || 'Errore upload immagine');
-          seoOgImage = upData.url;
+          ogImageB64 = await fileToB64(ogFile);
+          ogImageExt = fileExt(ogFile.name);
         }
 
         const titolo = (form.querySelector('input[name="titolo"]') as HTMLInputElement)?.value?.trim();
@@ -268,13 +284,15 @@ const { data: articoli, error: listErr } = await supabase
             pubblicato,
             seo_titolo: seoTitolo || null,
             seo_descrizione: seoDesc || null,
-            seo_og_image: seoOgImage || null,
+            seo_og_image: (form.querySelector('input[name="seo_og_image_url"]') as HTMLInputElement)?.value?.trim() || null,
+            og_image_b64: ogImageB64,
+            og_image_ext: ogImageExt,
             contenuto_b64: btoa(unescape(encodeURIComponent(html))),
           }),
         });
 
-        const data = await res.json();
-        if (!res.ok) throw new Error(data.error || 'Errore salvataggio');
+        const { ok, data } = await parseApiResponse(res);
+        if (!ok) throw new Error(data.error || 'Errore salvataggio');
 
         window.location.href = '/admin/blog?ok=1';
       } catch (err) {

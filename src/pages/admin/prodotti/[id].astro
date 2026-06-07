@@ -187,6 +187,27 @@ const descrizioneEsistente = prodotto.descrizione ?? '';
     return btoa(unescape(encodeURIComponent(str)));
   }
 
+  function fileExt(name) {
+    return (name.split('.').pop() || 'jpg').toLowerCase();
+  }
+
+  function fileToB64(file) {
+    return new Promise(function(resolve, reject) {
+      var reader = new FileReader();
+      reader.onload = function() { resolve(String(reader.result).split(',')[1]); };
+      reader.onerror = reject;
+      reader.readAsDataURL(file);
+    });
+  }
+
+  async function parseApiResponse(res) {
+    var text = await res.text();
+    try { return { ok: res.ok, data: JSON.parse(text) }; }
+    catch (e) {
+      throw new Error(res.status === 403 ? 'Bloccato dal firewall Vercel — riprova tra poco' : (text.slice(0, 120) || 'Errore server'));
+    }
+  }
+
   const form = document.getElementById('form-modifica-prodotto');
   const msgEl = document.getElementById('modifica-prodotto-msg');
   const btn = document.getElementById('btn-salva-prodotto');
@@ -206,60 +227,51 @@ const descrizioneEsistente = prodotto.descrizione ?? '';
       if (msgEl) { msgEl.style.color = 'var(--text-muted)'; msgEl.textContent = 'Salvataggio in corso…'; msgEl.classList.remove('hidden'); }
 
       try {
-        let filePath = null;
         const pdfFile = document.getElementById('pdf-input')?.files?.[0];
+        let pdfB64 = null;
         if (pdfFile && pdfFile.size > 0) {
-          const pdfFd = new FormData();
-          pdfFd.append('file', pdfFile);
-          pdfFd.append('nome', nome);
-          const pdfRes = await fetch('/api/admin/pdf', { method: 'POST', body: pdfFd });
-          const pdfData = await pdfRes.json();
-          if (!pdfRes.ok) throw new Error(pdfData.error || 'Errore upload PDF');
-          filePath = pdfData.file_path;
+          pdfB64 = await fileToB64(pdfFile);
         }
 
-        let seoOgImage = form.querySelector('input[name="seo_og_image_url"]')?.value?.trim() || '';
         const ogFile = form.querySelector('input[name="seo_og_image_file"]')?.files?.[0];
         const uploadPanel = document.getElementById('og-panel-upload');
         const isUploadTab = uploadPanel && !uploadPanel.classList.contains('hidden');
+        let ogImageB64 = null;
+        let ogImageExt = null;
         if (isUploadTab && ogFile && ogFile.size > 0) {
-          const ogFd = new FormData();
-          ogFd.append('file', ogFile);
-          const ogRes = await fetch('/api/admin/og-image', { method: 'POST', body: ogFd });
-          const ogData = await ogRes.json();
-          if (!ogRes.ok) throw new Error(ogData.error || 'Errore upload immagine');
-          seoOgImage = ogData.url;
+          ogImageB64 = await fileToB64(ogFile);
+          ogImageExt = fileExt(ogFile.name);
         }
 
         const html = quill.root.innerHTML;
         const anteprima = html === '<p><br></p>' ? '' : html;
         const tagIds = Array.from(form.querySelectorAll('input[name="tag_ids"]:checked')).map(function(el) { return el.value; });
 
-        const payload = {
-          action: 'aggiorna',
-          id: prodottoId,
-          nome,
-          descrizione: form.querySelector('textarea[name="descrizione"]')?.value?.trim() || null,
-          anteprima_b64: anteprima ? toB64(anteprima) : null,
-          prezzo,
-          prezzo_originale: form.querySelector('input[name="prezzo_originale"]')?.value?.trim() || null,
-          slug: form.querySelector('input[name="slug"]')?.value?.trim() || null,
-          seo_titolo: form.querySelector('input[name="seo_titolo"]')?.value?.trim() || null,
-          seo_descrizione: form.querySelector('textarea[name="seo_descrizione"]')?.value?.trim() || null,
-          seo_og_image: seoOgImage || null,
-          categoria_id: form.querySelector('select[name="categoria_id"]')?.value?.trim() || null,
-          tag_ids: tagIds,
-        };
-        if (filePath) payload.file_path = filePath;
-
         const res = await fetch('/api/admin/prodotti', {
           method: 'POST',
           headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify(payload),
+          body: JSON.stringify({
+            action: 'aggiorna',
+            id: prodottoId,
+            nome,
+            descrizione: form.querySelector('textarea[name="descrizione"]')?.value?.trim() || null,
+            anteprima_b64: anteprima ? toB64(anteprima) : null,
+            prezzo,
+            prezzo_originale: form.querySelector('input[name="prezzo_originale"]')?.value?.trim() || null,
+            slug: form.querySelector('input[name="slug"]')?.value?.trim() || null,
+            seo_titolo: form.querySelector('input[name="seo_titolo"]')?.value?.trim() || null,
+            seo_descrizione: form.querySelector('textarea[name="seo_descrizione"]')?.value?.trim() || null,
+            seo_og_image: form.querySelector('input[name="seo_og_image_url"]')?.value?.trim() || null,
+            og_image_b64: ogImageB64,
+            og_image_ext: ogImageExt,
+            pdf_b64: pdfB64,
+            categoria_id: form.querySelector('select[name="categoria_id"]')?.value?.trim() || null,
+            tag_ids: tagIds,
+          }),
         });
 
-        const data = await res.json();
-        if (!res.ok) throw new Error(data.error || 'Errore salvataggio');
+        const { ok, data } = await parseApiResponse(res);
+        if (!ok) throw new Error(data.error || 'Errore salvataggio');
 
         window.location.href = window.location.pathname + '?ok=1';
       } catch (err) {

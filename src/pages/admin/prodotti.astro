@@ -256,6 +256,27 @@ const { data: prodotti, error: listErr } = await supabase
     return btoa(unescape(encodeURIComponent(str)));
   }
 
+  function fileExt(name) {
+    return (name.split('.').pop() || 'jpg').toLowerCase();
+  }
+
+  function fileToB64(file) {
+    return new Promise(function(resolve, reject) {
+      var reader = new FileReader();
+      reader.onload = function() { resolve(String(reader.result).split(',')[1]); };
+      reader.onerror = reject;
+      reader.readAsDataURL(file);
+    });
+  }
+
+  async function parseApiResponse(res) {
+    var text = await res.text();
+    try { return { ok: res.ok, data: JSON.parse(text) }; }
+    catch (e) {
+      throw new Error(res.status === 403 ? 'Bloccato dal firewall Vercel — riprova tra poco' : (text.slice(0, 120) || 'Errore server'));
+    }
+  }
+
   const form = document.getElementById('form-crea-prodotto');
   const msgEl = document.getElementById('crea-prodotto-msg');
   const btn = document.getElementById('btn-salva-prodotto');
@@ -278,29 +299,19 @@ const { data: prodotti, error: listErr } = await supabase
       }
 
       if (btn) { btn.disabled = true; btn.textContent = 'Caricamento…'; }
-      if (msgEl) { msgEl.style.color = 'var(--text-muted)'; msgEl.textContent = 'Upload PDF in corso…'; msgEl.classList.remove('hidden'); }
+      if (msgEl) { msgEl.style.color = 'var(--text-muted)'; msgEl.textContent = 'Preparazione file…'; msgEl.classList.remove('hidden'); }
 
       try {
-        // 1. Upload PDF
-        const pdfFd = new FormData();
-        pdfFd.append('file', pdfFile);
-        pdfFd.append('nome', nome);
-        const pdfRes = await fetch('/api/admin/pdf', { method: 'POST', body: pdfFd });
-        const pdfData = await pdfRes.json();
-        if (!pdfRes.ok) throw new Error(pdfData.error || 'Errore upload PDF');
+        const pdfB64 = await fileToB64(pdfFile);
 
-        // 2. Upload OG image se presente
-        let seoOgImage = form.querySelector('input[name="seo_og_image_url"]')?.value?.trim() || '';
         const ogFile = form.querySelector('input[name="seo_og_image_file"]')?.files?.[0];
         const uploadPanel = document.getElementById('og-panel-upload');
         const isUploadTab = uploadPanel && !uploadPanel.classList.contains('hidden');
+        let ogImageB64 = null;
+        let ogImageExt = null;
         if (isUploadTab && ogFile && ogFile.size > 0) {
-          const ogFd = new FormData();
-          ogFd.append('file', ogFile);
-          const ogRes = await fetch('/api/admin/og-image', { method: 'POST', body: ogFd });
-          const ogData = await ogRes.json();
-          if (!ogRes.ok) throw new Error(ogData.error || 'Errore upload immagine');
-          seoOgImage = ogData.url;
+          ogImageB64 = await fileToB64(ogFile);
+          ogImageExt = fileExt(ogFile.name);
         }
 
         if (msgEl) msgEl.textContent = 'Salvataggio prodotto…';
@@ -308,7 +319,6 @@ const { data: prodotti, error: listErr } = await supabase
         const html = quill.root.innerHTML;
         const anteprima = html === '<p><br></p>' ? '' : html;
 
-        // 3. Crea prodotto via JSON
         const res = await fetch('/api/admin/prodotti', {
           method: 'POST',
           headers: { 'Content-Type': 'application/json' },
@@ -322,13 +332,15 @@ const { data: prodotti, error: listErr } = await supabase
             slug: form.querySelector('input[name="slug"]')?.value?.trim() || null,
             seo_titolo: form.querySelector('input[name="seo_titolo"]')?.value?.trim() || null,
             seo_descrizione: form.querySelector('textarea[name="seo_descrizione"]')?.value?.trim() || null,
-            seo_og_image: seoOgImage || null,
-            file_path: pdfData.file_path,
+            seo_og_image: form.querySelector('input[name="seo_og_image_url"]')?.value?.trim() || null,
+            og_image_b64: ogImageB64,
+            og_image_ext: ogImageExt,
+            pdf_b64: pdfB64,
           }),
         });
 
-        const data = await res.json();
-        if (!res.ok) throw new Error(data.error || 'Errore salvataggio');
+        const { ok, data } = await parseApiResponse(res);
+        if (!ok) throw new Error(data.error || 'Errore salvataggio');
 
         window.location.href = '/admin/prodotti?ok=1';
       } catch (err) {
@@ -348,8 +360,9 @@ const { data: prodotti, error: listErr } = await supabase
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ action: 'elimina', id }),
       });
-      if (res.ok) window.location.reload();
-      else { const d = await res.json(); alert('Errore: ' + (d.error || 'sconosciuto')); }
+      const { ok, data } = await parseApiResponse(res);
+      if (ok) window.location.reload();
+      else alert('Errore: ' + (data.error || 'sconosciuto'));
     });
   });
 })();

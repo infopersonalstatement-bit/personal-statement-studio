@@ -1,4 +1,5 @@
 import type { APIRoute } from 'astro';
+import { uploadOgImageFromB64 } from '../../../lib/admin-upload';
 import { createSupabaseAdminClient } from '../../../lib/supabase/server';
 
 export const prerender = false;
@@ -24,6 +25,20 @@ function jsonResponse(data: unknown, status = 200) {
     status,
     headers: { 'Content-Type': 'application/json' },
   });
+}
+
+async function resolveOgImage(
+  supabase: ReturnType<typeof createSupabaseAdminClient>,
+  body: Record<string, unknown>,
+  fallback: string | null,
+): Promise<string | null> {
+  const ogB64 = String(body.og_image_b64 ?? '').trim();
+  if (ogB64) {
+    const ext = String(body.og_image_ext ?? 'jpg').trim().toLowerCase();
+    return uploadOgImageFromB64(supabase, ogB64, ext);
+  }
+  const url = String(body.seo_og_image ?? '').trim();
+  return url || fallback;
 }
 
 export const POST: APIRoute = async ({ request, locals }) => {
@@ -71,7 +86,6 @@ export const POST: APIRoute = async ({ request, locals }) => {
     const pubblicato = Boolean(body.pubblicato);
     const seo_titolo = String(body.seo_titolo ?? '').trim() || null;
     const seo_descrizione = String(body.seo_descrizione ?? '').trim() || null;
-    const seo_og_image = String(body.seo_og_image ?? '').trim() || null;
     const categoria_id = String(body.categoria_id ?? '').trim() || null;
     const tagIds = Array.isArray(body.tag_ids) ? body.tag_ids.map(String) : [];
     const slugInput = String(body.slug ?? '').trim();
@@ -82,27 +96,38 @@ export const POST: APIRoute = async ({ request, locals }) => {
       return jsonResponse({ error: 'Titolo e contenuto sono obbligatori' }, 400);
     }
 
-    const updatePayload: Record<string, unknown> = {
-      titolo,
-      estratto,
-      contenuto,
-      pubblicato,
-      seo_titolo,
-      seo_descrizione,
-      seo_og_image,
-      categoria_id,
-    };
-    if (slug) updatePayload.slug = slug;
+    try {
+      const seo_og_image = await resolveOgImage(
+        supabase,
+        body,
+        String(body.seo_og_image ?? '').trim() || null,
+      );
 
-    const { error } = await supabase.from('articoli').update(updatePayload).eq('id', id);
-    if (error) return jsonResponse({ error: error.message }, 500);
+      const updatePayload: Record<string, unknown> = {
+        titolo,
+        estratto,
+        contenuto,
+        pubblicato,
+        seo_titolo,
+        seo_descrizione,
+        seo_og_image,
+        categoria_id,
+      };
+      if (slug) updatePayload.slug = slug;
 
-    await supabase.from('articoli_tag').delete().eq('articolo_id', id);
-    if (tagIds.length > 0) {
-      await supabase.from('articoli_tag').insert(tagIds.map((tid) => ({ articolo_id: id, tag_id: tid })));
+      const { error } = await supabase.from('articoli').update(updatePayload).eq('id', id);
+      if (error) return jsonResponse({ error: error.message }, 500);
+
+      await supabase.from('articoli_tag').delete().eq('articolo_id', id);
+      if (tagIds.length > 0) {
+        await supabase.from('articoli_tag').insert(tagIds.map((tid) => ({ articolo_id: id, tag_id: tid })));
+      }
+
+      return jsonResponse({ ok: true });
+    } catch (e: unknown) {
+      const message = e instanceof Error ? e.message : 'Errore upload immagine';
+      return jsonResponse({ error: message }, 500);
     }
-
-    return jsonResponse({ ok: true });
   }
 
   // ── Crea articolo ──────────────────────────────────────────
@@ -111,30 +136,36 @@ export const POST: APIRoute = async ({ request, locals }) => {
   const pubblicato = Boolean(body.pubblicato);
   const seo_titolo = String(body.seo_titolo ?? '').trim() || null;
   const seo_descrizione = String(body.seo_descrizione ?? '').trim() || null;
-  const seo_og_image = String(body.seo_og_image ?? '').trim() || null;
   const contenuto = decodeHtml(body, 'contenuto', 'contenuto_b64');
 
   if (!titolo || !contenuto || contenuto === '<p><br></p>') {
     return jsonResponse({ error: 'Titolo e contenuto sono obbligatori' }, 400);
   }
 
-  let slug = slugify(titolo);
-  const { data: existing } = await supabase.from('articoli').select('slug').like('slug', `${slug}%`);
-  if (existing && existing.length > 0) {
-    slug = `${slug}-${Date.now()}`;
+  try {
+    const seo_og_image = await resolveOgImage(supabase, body, null);
+
+    let slug = slugify(titolo);
+    const { data: existing } = await supabase.from('articoli').select('slug').like('slug', `${slug}%`);
+    if (existing && existing.length > 0) {
+      slug = `${slug}-${Date.now()}`;
+    }
+
+    const { error } = await supabase.from('articoli').insert({
+      titolo,
+      slug,
+      estratto,
+      contenuto,
+      pubblicato,
+      seo_titolo,
+      seo_descrizione,
+      seo_og_image,
+    });
+
+    if (error) return jsonResponse({ error: error.message }, 500);
+    return jsonResponse({ ok: true, slug });
+  } catch (e: unknown) {
+    const message = e instanceof Error ? e.message : 'Errore upload immagine';
+    return jsonResponse({ error: message }, 500);
   }
-
-  const { error } = await supabase.from('articoli').insert({
-    titolo,
-    slug,
-    estratto,
-    contenuto,
-    pubblicato,
-    seo_titolo,
-    seo_descrizione,
-    seo_og_image,
-  });
-
-  if (error) return jsonResponse({ error: error.message }, 500);
-  return jsonResponse({ ok: true, slug });
 };
