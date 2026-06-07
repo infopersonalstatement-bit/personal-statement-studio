@@ -180,12 +180,21 @@ const correlati = prodotto.categorie?.id
           />
         </div>
 
-        <!-- Testo di vendita — sempre visibile a tutti -->
-        {prodotto.anteprima ? (
-          <div class="shop-prose" set:html={prodotto.anteprima} />
-        ) : prodotto.descrizione ? (
-          <p class="text-base leading-relaxed" style="color:var(--text);">{prodotto.descrizione}</p>
-        ) : null}
+        <!-- Titolo + descrizione + testo di vendita -->
+        <header class="mb-10">
+          <h1 class="font-display text-4xl font-light leading-tight sm:text-5xl" style="color: var(--text);">
+            {prodotto.nome}
+          </h1>
+          {prodotto.descrizione && (
+            <p class="mt-4 max-w-2xl text-lg font-light leading-relaxed" style="color: var(--text-muted);">
+              {prodotto.descrizione}
+            </p>
+          )}
+        </header>
+
+        {prodotto.anteprima && (
+          <div class="prose-brand shop-sales-copy" set:html={prodotto.anteprima} />
+        )}
 
         <!-- Divisore -->
         <div class="my-10 flex items-center gap-4">

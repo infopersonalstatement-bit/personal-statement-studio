@@ -259,7 +259,7 @@ const { data: articoli, error: listErr } = await supabase
       if (msgEl) { msgEl.className = 'mt-3 text-sm'; msgEl.style.color = 'var(--text-muted)'; msgEl.textContent = 'Salvataggio in corso…'; msgEl.classList.remove('hidden'); }
 
       try {
-        const ogFile = (form.querySelector('input[name="seo_og_image_file"]') as HTMLInputElement)?.files?.[0];
+        const ogFile = form.querySelector('input[name="seo_og_image_file"]')?.files?.[0];
         const uploadPanel = document.getElementById('og-panel-upload');
         const isUploadTab = uploadPanel && !uploadPanel.classList.contains('hidden');
         let ogImageB64 = null;
@@ -269,11 +269,11 @@ const { data: articoli, error: listErr } = await supabase
           ogImageExt = fileExt(ogFile.name);
         }
 
-        const titolo = (form.querySelector('input[name="titolo"]') as HTMLInputElement)?.value?.trim();
-        const estratto = (form.querySelector('textarea[name="estratto"]') as HTMLTextAreaElement)?.value?.trim();
-        const pubblicato = (form.querySelector('input[name="pubblicato"]') as HTMLInputElement)?.checked;
-        const seoTitolo = (form.querySelector('input[name="seo_titolo"]') as HTMLInputElement)?.value?.trim();
-        const seoDesc = (form.querySelector('textarea[name="seo_descrizione"]') as HTMLTextAreaElement)?.value?.trim();
+        const titolo = form.querySelector('input[name="titolo"]')?.value?.trim();
+        const estratto = form.querySelector('textarea[name="estratto"]')?.value?.trim();
+        const pubblicato = form.querySelector('input[name="pubblicato"]')?.checked;
+        const seoTitolo = form.querySelector('input[name="seo_titolo"]')?.value?.trim();
+        const seoDesc = form.querySelector('textarea[name="seo_descrizione"]')?.value?.trim();
 
         const res = await fetch('/api/admin/articoli', {
           method: 'POST',
@@ -284,7 +284,7 @@ const { data: articoli, error: listErr } = await supabase
             pubblicato,
             seo_titolo: seoTitolo || null,
             seo_descrizione: seoDesc || null,
-            seo_og_image: (form.querySelector('input[name="seo_og_image_url"]') as HTMLInputElement)?.value?.trim() || null,
+            seo_og_image: form.querySelector('input[name="seo_og_image_url"]')?.value?.trim() || null,
             og_image_b64: ogImageB64,
             og_image_ext: ogImageExt,
             contenuto_b64: btoa(unescape(encodeURIComponent(html))),
