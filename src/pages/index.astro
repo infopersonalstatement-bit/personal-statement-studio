@@ -63,32 +63,36 @@ const { count: bundleCount } = await Astro.locals.supabase
     </div>
   </section>
 
-  <!-- ── PILASTRI ───────────────────────────────────────────────────────── -->
+  <!-- ── QUALE PERCORSO ─────────────────────────────────────────────────── -->
   <section class="py-24 px-6">
     <div class="mx-auto max-w-6xl">
       <p class="mb-4 text-center text-xs font-semibold uppercase tracking-[0.3em]" style="color: var(--gold);">
-        I tre percorsi
+        Quale percorso fa per te?
       </p>
-      <h2 class="font-display mb-16 text-center text-3xl font-light sm:text-4xl" style="color: var(--text);">
-        Dentro. Fuori. <em class="not-italic font-semibold" style="color: var(--gold);">Insieme.</em>
+      <h2 class="font-display mb-4 text-center text-3xl font-light sm:text-4xl" style="color: var(--text);">
+        Prima capisci dove sei.<br />
+        <em class="not-italic font-semibold" style="color: var(--gold);">Poi scegli cosa scaricare.</em>
       </h2>
+      <p class="mx-auto mb-16 max-w-2xl text-center text-sm leading-relaxed" style="color: var(--text-muted);">
+        Ti riconosci in uno di questi scenari? Ogni situazione corrisponde a un percorso nel vault — scopri quale sotto.
+      </p>
 
       <div class="grid gap-8 sm:grid-cols-3">
         {[
           {
             num: '01',
-            title: 'Glow-Up',
-            desc: 'Crescita personale e miglioramento: abitudini, mindset, immagine e consigli per vedersi e sentirsi meglio ogni giorno.',
+            title: 'Vuoi migliorare te stesso',
+            desc: 'Abitudini, mindset, immagine, routine quotidiana. Se il focus è crescere dentro — non solo "postare di più" — il percorso giusto è Glow-Up.',
           },
           {
             num: '02',
-            title: 'Digital Identity',
-            desc: 'Presenza online e social media: cosa postare, come scrivere caption efficaci e costruire un\'identità digitale riconoscibile.',
+            title: 'Vuoi comunicare meglio online',
+            desc: 'Profilo, contenuti, caption, coerenza visiva. Se il problema è come farti vedere sui social, serve Digital Identity.',
           },
           {
             num: '03',
-            title: 'Bundle',
-            desc: 'Pacchetti che uniscono guide Glow-Up e Digital Identity. Più contenuti, un solo acquisto, prezzo scontato.',
+            title: 'Vuoi entrambi',
+            desc: 'Crescita personale e presenza online vanno di pari passo. I Bundle uniscono guide dei due mondi a prezzo vantaggioso.',
           },
         ].map((item) => (
           <div
