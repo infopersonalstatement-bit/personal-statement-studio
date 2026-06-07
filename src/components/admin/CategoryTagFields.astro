@@ -1,0 +1,63 @@
+---
+interface Props {
+  tipo: 'blog' | 'shop';
+  categorie: { id: string; nome: string }[];
+  tagDisponibili: { id: string; nome: string }[];
+  categoriaId?: string | null;
+  tagSelezionati?: Set<string>;
+}
+
+const {
+  tipo,
+  categorie = [],
+  tagDisponibili = [],
+  categoriaId = null,
+  tagSelezionati = new Set<string>(),
+} = Astro.props;
+
+const tipoLabel = tipo === 'blog' ? 'blog' : 'shop';
+---
+
+<div class="grid gap-5 sm:grid-cols-2">
+  <div>
+    <label class="mb-1.5 block text-xs font-semibold uppercase tracking-widest" style="color:var(--text-muted);">Categoria</label>
+    <select name="categoria_id" class="auth-input w-full">
+      <option value="">— Nessuna categoria —</option>
+      {categorie.map((c) => (
+        <option value={c.id} selected={categoriaId === c.id}>{c.nome}</option>
+      ))}
+    </select>
+    {categorie.length === 0 && (
+      <p class="mt-1 text-xs" style="color:var(--text-muted);">
+        Nessuna categoria {tipoLabel}. <a href="/admin/categorie" style="color:var(--gold);">Creane una →</a>
+      </p>
+    )}
+  </div>
+  <div>
+    <label class="mb-1.5 block text-xs font-semibold uppercase tracking-widest" style="color:var(--text-muted);">Tag</label>
+    <div class="flex flex-wrap gap-2 rounded-xl border p-3" style="border-color:var(--border); background-color:var(--bg);">
+      {tagDisponibili.map((t) => (
+        <label
+          class="flex cursor-pointer items-center gap-1.5 rounded-full border px-2.5 py-1 text-xs transition-colors"
+          style={`border-color:${tagSelezionati.has(t.id) ? 'var(--gold)' : 'var(--border)'}; color:${tagSelezionati.has(t.id) ? 'var(--gold)' : 'var(--text-muted)'};`}
+          id={`tag-lbl-${t.id}`}
+        >
+          <input
+            type="checkbox"
+            name="tag_ids"
+            value={t.id}
+            checked={tagSelezionati.has(t.id)}
+            class="sr-only"
+            onchange={`var l=document.getElementById('tag-lbl-${t.id}');l.style.borderColor=this.checked?'var(--gold)':'var(--border)';l.style.color=this.checked?'var(--gold)':'var(--text-muted)';`}
+          />
+          {t.nome}
+        </label>
+      ))}
+      {tagDisponibili.length === 0 && (
+        <p class="text-xs" style="color:var(--text-muted);">
+          Nessun tag. <a href="/admin/categorie" style="color:var(--gold);">Creane uno →</a>
+        </p>
+      )}
+    </div>
+  </div>
+</div>

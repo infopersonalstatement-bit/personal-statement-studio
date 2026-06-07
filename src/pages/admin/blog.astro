@@ -2,6 +2,7 @@
 import AdminLayout from '../../layouts/AdminLayout.astro';
 import { createSupabaseAdminClient } from '../../lib/supabase/server';
 import SeoFields from '../../components/admin/SeoFields.astro';
+import CategoryTagFields from '../../components/admin/CategoryTagFields.astro';
 
 const supabase = createSupabaseAdminClient();
 
@@ -10,11 +11,18 @@ let successMsg = Astro.url.searchParams.get('ok') === '1'
   : '';
 let errorMsg = '';
 
-// ─── Lista articoli ───────────────────────────────────────────────────────────
-const { data: articoli, error: listErr } = await supabase
-  .from('articoli')
-  .select('id, titolo, slug, estratto, pubblicato, created_at')
-  .order('created_at', { ascending: false });
+const [
+  { data: articoli, error: listErr },
+  { data: categorie },
+  { data: tagDisponibili },
+] = await Promise.all([
+  supabase
+    .from('articoli')
+    .select('id, titolo, slug, estratto, pubblicato, created_at')
+    .order('created_at', { ascending: false }),
+  supabase.from('categorie').select('id, nome').in('tipo', ['blog', 'both']).order('nome'),
+  supabase.from('tag').select('id, nome').in('tipo', ['blog', 'both']).order('nome'),
+]);
 ---
 
 <AdminLayout title="Blog" activeNav="blog">
@@ -68,6 +76,12 @@ const { data: articoli, error: listErr } = await supabase
         <!-- Editor WYSIWYG -->
         <div id="editor-contenuto" style="min-height: 360px;"></div>
       </div>
+
+      <CategoryTagFields
+        tipo="blog"
+        categorie={categorie ?? []}
+        tagDisponibili={tagDisponibili ?? []}
+      />
 
       <div class="flex items-center gap-3">
         <label class="relative inline-flex cursor-pointer items-center">
@@ -274,6 +288,7 @@ const { data: articoli, error: listErr } = await supabase
         const pubblicato = form.querySelector('input[name="pubblicato"]')?.checked;
         const seoTitolo = form.querySelector('input[name="seo_titolo"]')?.value?.trim();
         const seoDesc = form.querySelector('textarea[name="seo_descrizione"]')?.value?.trim();
+        const tagIds = Array.from(form.querySelectorAll('input[name="tag_ids"]:checked')).map(function(el) { return el.value; });
 
         const res = await fetch('/api/admin/articoli', {
           method: 'POST',
@@ -287,6 +302,8 @@ const { data: articoli, error: listErr } = await supabase
             seo_og_image: form.querySelector('input[name="seo_og_image_url"]')?.value?.trim() || null,
             og_image_b64: ogImageB64,
             og_image_ext: ogImageExt,
+            categoria_id: form.querySelector('select[name="categoria_id"]')?.value?.trim() || null,
+            tag_ids: tagIds,
             contenuto_b64: btoa(unescape(encodeURIComponent(html))),
           }),
         });

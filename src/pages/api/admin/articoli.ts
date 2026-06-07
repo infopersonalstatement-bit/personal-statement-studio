@@ -137,6 +137,8 @@ export const POST: APIRoute = async ({ request, locals }) => {
   const seo_titolo = String(body.seo_titolo ?? '').trim() || null;
   const seo_descrizione = String(body.seo_descrizione ?? '').trim() || null;
   const contenuto = decodeHtml(body, 'contenuto', 'contenuto_b64');
+  const categoria_id = String(body.categoria_id ?? '').trim() || null;
+  const tagIds = Array.isArray(body.tag_ids) ? body.tag_ids.map(String) : [];
 
   if (!titolo || !contenuto || contenuto === '<p><br></p>') {
     return jsonResponse({ error: 'Titolo e contenuto sono obbligatori' }, 400);
@@ -151,7 +153,7 @@ export const POST: APIRoute = async ({ request, locals }) => {
       slug = `${slug}-${Date.now()}`;
     }
 
-    const { error } = await supabase.from('articoli').insert({
+    const { data: inserted, error } = await supabase.from('articoli').insert({
       titolo,
       slug,
       estratto,
@@ -160,9 +162,17 @@ export const POST: APIRoute = async ({ request, locals }) => {
       seo_titolo,
       seo_descrizione,
       seo_og_image,
-    });
+      categoria_id,
+    }).select('id').single();
 
     if (error) return jsonResponse({ error: error.message }, 500);
+
+    if (inserted && tagIds.length > 0) {
+      await supabase.from('articoli_tag').insert(
+        tagIds.map((tid) => ({ articolo_id: inserted.id, tag_id: tid })),
+      );
+    }
+
     return jsonResponse({ ok: true, slug });
   } catch (e: unknown) {
     const message = e instanceof Error ? e.message : 'Errore upload immagine';

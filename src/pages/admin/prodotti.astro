@@ -2,6 +2,7 @@
 import AdminLayout from '../../layouts/AdminLayout.astro';
 import { createSupabaseAdminClient } from '../../lib/supabase/server';
 import SeoFields from '../../components/admin/SeoFields.astro';
+import CategoryTagFields from '../../components/admin/CategoryTagFields.astro';
 
 const supabase = createSupabaseAdminClient();
 
@@ -10,11 +11,18 @@ let successMsg = Astro.url.searchParams.get('ok') === '1'
   : '';
 let errorMsg = '';
 
-// ─── Lista prodotti ───────────────────────────────────────────────────────────
-const { data: prodotti, error: listErr } = await supabase
-  .from('prodotti')
-  .select('id, nome, prezzo, descrizione, slug, created_at')
-  .order('created_at', { ascending: false });
+const [
+  { data: prodotti, error: listErr },
+  { data: categorie },
+  { data: tagDisponibili },
+] = await Promise.all([
+  supabase
+    .from('prodotti')
+    .select('id, nome, prezzo, descrizione, slug, created_at')
+    .order('created_at', { ascending: false }),
+  supabase.from('categorie').select('id, nome').in('tipo', ['shop', 'both']).order('nome'),
+  supabase.from('tag').select('id, nome').in('tipo', ['shop', 'both']).order('nome'),
+]);
 ---
 
 <AdminLayout title="Prodotti & PDF" activeNav="prodotti">
@@ -131,6 +139,12 @@ const { data: prodotti, error: listErr } = await supabase
         </div>
         <p id="pdf-filename" class="mt-1.5 text-xs" style="color:var(--gold);"></p>
       </div>
+
+      <CategoryTagFields
+        tipo="shop"
+        categorie={categorie ?? []}
+        tagDisponibili={tagDisponibili ?? []}
+      />
 
       <SeoFields />
 
@@ -318,6 +332,7 @@ const { data: prodotti, error: listErr } = await supabase
 
         const html = quill.root.innerHTML;
         const anteprima = html === '<p><br></p>' ? '' : html;
+        const tagIds = Array.from(form.querySelectorAll('input[name="tag_ids"]:checked')).map(function(el) { return el.value; });
 
         const res = await fetch('/api/admin/prodotti', {
           method: 'POST',
@@ -336,6 +351,8 @@ const { data: prodotti, error: listErr } = await supabase
             og_image_b64: ogImageB64,
             og_image_ext: ogImageExt,
             pdf_b64: pdfB64,
+            categoria_id: form.querySelector('select[name="categoria_id"]')?.value?.trim() || null,
+            tag_ids: tagIds,
           }),
         });
 

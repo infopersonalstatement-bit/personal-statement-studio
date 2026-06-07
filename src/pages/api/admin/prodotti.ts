@@ -171,6 +171,8 @@ export const POST: APIRoute = async ({ request, locals }) => {
   const prezzo_originale = prezzoOrigRaw ? parseFloat(prezzoOrigRaw) : null;
   const seo_titolo = String(body.seo_titolo ?? '').trim() || null;
   const seo_descrizione = String(body.seo_descrizione ?? '').trim() || null;
+  const categoria_id = String(body.categoria_id ?? '').trim() || null;
+  const tagIds = Array.isArray(body.tag_ids) ? body.tag_ids.map(String) : [];
   let slug = String(body.slug ?? '').trim()
     .toLowerCase()
     .replace(/[àáâ]/g, 'a').replace(/[èé]/g, 'e')
@@ -199,7 +201,7 @@ export const POST: APIRoute = async ({ request, locals }) => {
 
     const seo_og_image = await resolveOgImage(supabase, body, null);
 
-    const { error } = await supabase.from('prodotti').insert({
+    const { data: inserted, error } = await supabase.from('prodotti').insert({
       nome,
       descrizione,
       anteprima,
@@ -210,13 +212,20 @@ export const POST: APIRoute = async ({ request, locals }) => {
       seo_titolo,
       seo_descrizione,
       seo_og_image,
-    });
+      categoria_id,
+    }).select('id').single();
 
     if (error) {
       return new Response(JSON.stringify({ error: error.message }), {
         status: 500,
         headers: { 'Content-Type': 'application/json' },
       });
+    }
+
+    if (inserted && tagIds.length > 0) {
+      await supabase.from('prodotti_tag').insert(
+        tagIds.map((tid) => ({ prodotto_id: inserted.id, tag_id: tid })),
+      );
     }
 
     return new Response(JSON.stringify({ ok: true }), {
