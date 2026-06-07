@@ -1,7 +1,26 @@
 ---
 import BaseLayout from '../layouts/BaseLayout.astro';
 import PageHero from '../components/common/PageHero.astro';
+import ScrollReveal from '../components/common/ScrollReveal.astro';
 import { PROTOCOLLI, BUNDLE_HUB } from '../lib/protocolli';
+
+const scenarioCards = [
+  {
+    num: '01',
+    title: 'Vuoi migliorare te stesso',
+    desc: 'Abitudini, mindset, immagine, routine quotidiana. Se il focus è crescere dentro — non solo "postare di più" — il percorso giusto è Glow-Up.',
+  },
+  {
+    num: '02',
+    title: 'Vuoi comunicare meglio online',
+    desc: 'Profilo, contenuti, caption, coerenza visiva. Se il problema è come farti vedere sui social, serve Digital Identity.',
+  },
+  {
+    num: '03',
+    title: 'Vuoi entrambi',
+    desc: 'Crescita personale e presenza online vanno di pari passo. I Bundle uniscono guide dei due mondi a prezzo vantaggioso.',
+  },
+];
 
 const { data: counts } = await Astro.locals.supabase
   .from('prodotti')
@@ -41,70 +60,64 @@ const { count: bundleCount } = await Astro.locals.supabase
   <!-- ── MISSIONE ─────────────────────────────────────────────────────── -->
   <section class="py-24" style="background-color: var(--bg-surface);">
     <div class="mx-auto max-w-3xl px-6 text-center">
-      <p class="mb-4 text-xs font-semibold uppercase tracking-[0.3em]" style="color: var(--gold);">
-        La nostra missione
-      </p>
-      <p class="font-display text-2xl font-light leading-relaxed sm:text-3xl" style="color: var(--text);">
-        Migliorarsi e comunicare online non sono talenti innati.
-        <span class="block mt-3" style="color: var(--gold);">Sono competenze che si costruiscono.</span>
-      </p>
-      <div class="mx-auto my-10 h-px w-24" style="background-color: var(--gold);"></div>
-      <div class="space-y-5 text-left text-base leading-relaxed sm:text-center" style="color: var(--text-muted);">
-        <p>
-          Personal Statement offre <strong style="color: var(--gold);">protocolli digitali</strong> —
-          guide strutturate su crescita personale, immagine, abitudini e presenza sui social.
-          Niente contenuti generici: solo indicazioni chiare su <strong style="color: var(--text);">cosa fare e come farlo</strong>.
+      <ScrollReveal>
+        <p class="mb-4 text-xs font-semibold uppercase tracking-[0.3em]" style="color: var(--gold);">
+          La nostra missione
         </p>
-        <p>
-          Che tu voglia lavorare su te stesso, sulla tua comunicazione online o su entrambi,
-          trovi il percorso giusto nel vault.
+        <p class="font-display text-2xl font-light leading-relaxed sm:text-3xl" style="color: var(--text);">
+          Migliorarsi e comunicare online non sono talenti innati.
+          <span class="block mt-3" style="color: var(--gold);">Sono competenze che si costruiscono.</span>
         </p>
-      </div>
+      </ScrollReveal>
+      <ScrollReveal delay={120}>
+        <div class="mx-auto my-10 h-px w-24" style="background-color: var(--gold);"></div>
+      </ScrollReveal>
+      <ScrollReveal delay={220}>
+        <div class="space-y-5 text-left text-base leading-relaxed sm:text-center" style="color: var(--text-muted);">
+          <p>
+            Personal Statement offre <strong style="color: var(--gold);">protocolli digitali</strong> —
+            guide strutturate su crescita personale, immagine, abitudini e presenza sui social.
+            Niente contenuti generici: solo indicazioni chiare su <strong style="color: var(--text);">cosa fare e come farlo</strong>.
+          </p>
+          <p>
+            Che tu voglia lavorare su te stesso, sulla tua comunicazione online o su entrambi,
+            trovi il percorso giusto nel vault.
+          </p>
+        </div>
+      </ScrollReveal>
     </div>
   </section>
 
   <!-- ── QUALE PERCORSO ─────────────────────────────────────────────────── -->
   <section class="py-24 px-6">
     <div class="mx-auto max-w-6xl">
-      <p class="mb-4 text-center text-xs font-semibold uppercase tracking-[0.3em]" style="color: var(--gold);">
-        Quale percorso fa per te?
-      </p>
-      <h2 class="font-display mb-4 text-center text-3xl font-light sm:text-4xl" style="color: var(--text);">
-        Prima capisci dove sei.<br />
-        <em class="not-italic font-semibold" style="color: var(--gold);">Poi scegli cosa scaricare.</em>
-      </h2>
-      <p class="mx-auto mb-16 max-w-2xl text-center text-sm leading-relaxed" style="color: var(--text-muted);">
-        Ti riconosci in uno di questi scenari? Ogni situazione corrisponde a un percorso nel vault — scopri quale sotto.
-      </p>
+      <ScrollReveal>
+        <p class="mb-4 text-center text-xs font-semibold uppercase tracking-[0.3em]" style="color: var(--gold);">
+          Quale percorso fa per te?
+        </p>
+        <h2 class="font-display mb-4 text-center text-3xl font-light sm:text-4xl" style="color: var(--text);">
+          Prima capisci dove sei.<br />
+          <em class="not-italic font-semibold" style="color: var(--gold);">Poi scegli cosa scaricare.</em>
+        </h2>
+        <p class="mx-auto mb-16 max-w-2xl text-center text-sm leading-relaxed" style="color: var(--text-muted);">
+          Ti riconosci in uno di questi scenari? Ogni situazione corrisponde a un percorso nel vault — scopri quale sotto.
+        </p>
+      </ScrollReveal>
 
       <div class="grid gap-8 sm:grid-cols-3">
-        {[
-          {
-            num: '01',
-            title: 'Vuoi migliorare te stesso',
-            desc: 'Abitudini, mindset, immagine, routine quotidiana. Se il focus è crescere dentro — non solo "postare di più" — il percorso giusto è Glow-Up.',
-          },
-          {
-            num: '02',
-            title: 'Vuoi comunicare meglio online',
-            desc: 'Profilo, contenuti, caption, coerenza visiva. Se il problema è come farti vedere sui social, serve Digital Identity.',
-          },
-          {
-            num: '03',
-            title: 'Vuoi entrambi',
-            desc: 'Crescita personale e presenza online vanno di pari passo. I Bundle uniscono guide dei due mondi a prezzo vantaggioso.',
-          },
-        ].map((item) => (
-          <div
-            class="group rounded-2xl border p-8 transition-all duration-300"
-            style="border-color: var(--border); background-color: var(--bg-card);"
-            onmouseover="this.style.borderColor='var(--gold)'"
-            onmouseout="this.style.borderColor='var(--border)'"
-          >
-            <p class="mb-4 font-display text-4xl font-light" style="color: var(--gold);">{item.num}</p>
-            <h3 class="mb-3 text-sm font-semibold uppercase tracking-widest leading-snug" style="color: var(--text);">{item.title}</h3>
-            <p class="text-sm leading-relaxed" style="color: var(--text-muted);">{item.desc}</p>
-          </div>
+        {scenarioCards.map((item, i) => (
+          <ScrollReveal delay={i * 140} class="h-full">
+            <div
+              class="group h-full rounded-2xl border p-8 transition-all duration-300"
+              style="border-color: var(--border); background-color: var(--bg-card);"
+              onmouseover="this.style.borderColor='var(--gold)'"
+              onmouseout="this.style.borderColor='var(--border)'"
+            >
+              <p class="mb-4 font-display text-4xl font-light" style="color: var(--gold);">{item.num}</p>
+              <h3 class="mb-3 text-sm font-semibold uppercase tracking-widest leading-snug" style="color: var(--text);">{item.title}</h3>
+              <p class="text-sm leading-relaxed" style="color: var(--text-muted);">{item.desc}</p>
+            </div>
+          </ScrollReveal>
         ))}
       </div>
     </div>
@@ -113,57 +126,63 @@ const { count: bundleCount } = await Astro.locals.supabase
   <!-- ── PROTOCOLLI IN EVIDENZA ─────────────────────────────────────────── -->
   <section class="py-24 px-6" style="background-color: var(--bg-surface);">
     <div class="mx-auto max-w-6xl">
-      <p class="mb-4 text-center text-xs font-semibold uppercase tracking-[0.3em]" style="color: var(--gold);">
-        Il vault digitale
-      </p>
-      <h2 class="font-display mb-4 text-center text-3xl font-light sm:text-4xl" style="color: var(--text);">
-        Scegli il tuo percorso.<br />
-        <em class="not-italic font-semibold" style="color: var(--gold);">Scarica e applica.</em>
-      </h2>
-      <p class="mb-16 text-center text-sm max-w-2xl mx-auto leading-relaxed" style="color: var(--text-muted);">
-        Ogni protocollo è un prodotto digitale: guide, consigli e strategie pronte da usare.
-        Dopo l'acquisto, i file restano sempre disponibili nella tua area riservata.
-      </p>
+      <ScrollReveal>
+        <p class="mb-4 text-center text-xs font-semibold uppercase tracking-[0.3em]" style="color: var(--gold);">
+          Il vault digitale
+        </p>
+        <h2 class="font-display mb-4 text-center text-3xl font-light sm:text-4xl" style="color: var(--text);">
+          Scegli il tuo percorso.<br />
+          <em class="not-italic font-semibold" style="color: var(--gold);">Scarica e applica.</em>
+        </h2>
+        <p class="mb-16 text-center text-sm max-w-2xl mx-auto leading-relaxed" style="color: var(--text-muted);">
+          Ogni protocollo è un prodotto digitale: guide, consigli e strategie pronte da usare.
+          Dopo l'acquisto, i file restano sempre disponibili nella tua area riservata.
+        </p>
+      </ScrollReveal>
 
       <div class="grid gap-6 sm:grid-cols-2 lg:grid-cols-3">
-        {PROTOCOLLI.map((proto) => {
+        {PROTOCOLLI.map((proto, i) => {
           const count = proto.slug === 'glow-up' ? glowCount : digitalCount;
           return (
-            <a
-              href={proto.href}
-              class="group flex flex-col rounded-2xl border p-6 transition-all duration-300"
-              style="border-color: var(--border); background-color: var(--bg-card);"
-              onmouseover="this.style.borderColor='var(--gold)'"
-              onmouseout="this.style.borderColor='var(--border)'"
-            >
-              <p class="mb-2 text-[10px] font-semibold uppercase tracking-[0.3em]" style="color: var(--gold);">Protocollo</p>
-              <h3 class="font-display mb-2 text-2xl font-light" style="color: var(--text);">{proto.nome}</h3>
-              <p class="mb-3 text-xs font-semibold uppercase tracking-widest" style="color: var(--text-muted);">{proto.tagline}</p>
-              <p class="mb-4 flex-1 text-xs leading-relaxed" style="color: var(--text-muted);">{proto.descrizione}</p>
-              <p class="text-xs" style="color: var(--text-muted);">
-                {count > 0 ? `${count} disponibili` : 'In arrivo'}
-              </p>
-            </a>
+            <ScrollReveal delay={i * 140} class="h-full">
+              <a
+                href={proto.href}
+                class="group flex h-full flex-col rounded-2xl border p-6 transition-all duration-300"
+                style="border-color: var(--border); background-color: var(--bg-card);"
+                onmouseover="this.style.borderColor='var(--gold)'"
+                onmouseout="this.style.borderColor='var(--border)'"
+              >
+                <p class="mb-2 text-[10px] font-semibold uppercase tracking-[0.3em]" style="color: var(--gold);">Protocollo</p>
+                <h3 class="font-display mb-2 text-2xl font-light" style="color: var(--text);">{proto.nome}</h3>
+                <p class="mb-3 text-xs font-semibold uppercase tracking-widest" style="color: var(--text-muted);">{proto.tagline}</p>
+                <p class="mb-4 flex-1 text-xs leading-relaxed" style="color: var(--text-muted);">{proto.descrizione}</p>
+                <p class="text-xs" style="color: var(--text-muted);">
+                  {count > 0 ? `${count} disponibili` : 'In arrivo'}
+                </p>
+              </a>
+            </ScrollReveal>
           );
         })}
-        <a
-          href={BUNDLE_HUB.href}
-          class="group flex flex-col rounded-2xl border p-6 transition-all duration-300"
-          style="border-color: var(--border); background-color: color-mix(in srgb, var(--gold) 4%, var(--bg-card));"
-          onmouseover="this.style.borderColor='var(--gold)'"
-          onmouseout="this.style.borderColor='var(--border)'"
-        >
-          <p class="mb-2 text-[10px] font-semibold uppercase tracking-[0.3em]" style="color: var(--gold);">Offerta combinata</p>
-          <h3 class="font-display mb-2 text-2xl font-light" style="color: var(--text);">{BUNDLE_HUB.nome}</h3>
-          <p class="mb-3 text-xs font-semibold uppercase tracking-widest" style="color: var(--text-muted);">{BUNDLE_HUB.tagline}</p>
-          <p class="mb-4 flex-1 text-xs leading-relaxed" style="color: var(--text-muted);">{BUNDLE_HUB.descrizione}</p>
-          <p class="text-xs" style="color: var(--text-muted);">
-            {(bundleCount ?? 0) > 0 ? `${bundleCount} bundle attivi` : 'Nessun bundle ancora'}
-          </p>
-        </a>
+        <ScrollReveal delay={280} class="h-full">
+          <a
+            href={BUNDLE_HUB.href}
+            class="group flex h-full flex-col rounded-2xl border p-6 transition-all duration-300"
+            style="border-color: var(--border); background-color: color-mix(in srgb, var(--gold) 4%, var(--bg-card));"
+            onmouseover="this.style.borderColor='var(--gold)'"
+            onmouseout="this.style.borderColor='var(--border)'"
+          >
+            <p class="mb-2 text-[10px] font-semibold uppercase tracking-[0.3em]" style="color: var(--gold);">Offerta combinata</p>
+            <h3 class="font-display mb-2 text-2xl font-light" style="color: var(--text);">{BUNDLE_HUB.nome}</h3>
+            <p class="mb-3 text-xs font-semibold uppercase tracking-widest" style="color: var(--text-muted);">{BUNDLE_HUB.tagline}</p>
+            <p class="mb-4 flex-1 text-xs leading-relaxed" style="color: var(--text-muted);">{BUNDLE_HUB.descrizione}</p>
+            <p class="text-xs" style="color: var(--text-muted);">
+              {(bundleCount ?? 0) > 0 ? `${bundleCount} bundle attivi` : 'Nessun bundle ancora'}
+            </p>
+          </a>
+        </ScrollReveal>
       </div>
 
-      <div class="mt-12 text-center">
+      <ScrollReveal delay={120} class="mt-12 text-center">
         <a
           href="/shop"
           class="inline-block rounded-full border px-8 py-3 text-xs font-semibold uppercase tracking-widest transition-all"
@@ -173,41 +192,47 @@ const { count: bundleCount } = await Astro.locals.supabase
         >
           Accedi ai Protocolli →
         </a>
-      </div>
+      </ScrollReveal>
     </div>
   </section>
 
   <!-- ── CTA FINALE ─────────────────────────────────────────────────────── -->
   <section class="py-32 px-6 text-center">
     <div class="mx-auto max-w-2xl">
-      <p class="font-display mb-6 text-4xl font-light leading-tight sm:text-5xl" style="color: var(--text);">
-        Pronto a<br />
-        <em class="not-italic font-semibold" style="color: var(--gold);">iniziare?</em>
-      </p>
-      <p class="mb-10 text-base leading-relaxed" style="color: var(--text-muted);">
-        Esplora i protocolli, scegli il percorso che fa per te e accedi ai contenuti dalla tua area riservata.
-        Per la filosofia dietro il metodo, leggi il Manifesto.
-      </p>
-      <div class="flex flex-wrap items-center justify-center gap-4">
-        <a
-          href="/shop"
-          class="inline-block rounded-full px-10 py-4 text-sm font-semibold uppercase tracking-widest transition-all"
-          style="background-color: var(--gold); color: #0F0D0A;"
-          onmouseover="this.style.backgroundColor='var(--gold-hover)'"
-          onmouseout="this.style.backgroundColor='var(--gold)'"
-        >
-          Accedi ai Protocolli
-        </a>
-        <a
-          href="/manifesto"
-          class="inline-block rounded-full border px-8 py-4 text-sm font-semibold uppercase tracking-widest transition-all"
-          style="border-color: var(--gold); color: var(--gold);"
-          onmouseover="this.style.backgroundColor='var(--gold)'; this.style.color='#0F0D0A'"
-          onmouseout="this.style.backgroundColor='transparent'; this.style.color='var(--gold)'"
-        >
-          Leggi il Manifesto
-        </a>
-      </div>
+      <ScrollReveal>
+        <p class="font-display mb-6 text-4xl font-light leading-tight sm:text-5xl" style="color: var(--text);">
+          Pronto a<br />
+          <em class="not-italic font-semibold" style="color: var(--gold);">iniziare?</em>
+        </p>
+      </ScrollReveal>
+      <ScrollReveal delay={120}>
+        <p class="mb-10 text-base leading-relaxed" style="color: var(--text-muted);">
+          Esplora i protocolli, scegli il percorso che fa per te e accedi ai contenuti dalla tua area riservata.
+          Per la filosofia dietro il metodo, leggi il Manifesto.
+        </p>
+      </ScrollReveal>
+      <ScrollReveal delay={240}>
+        <div class="flex flex-wrap items-center justify-center gap-4">
+          <a
+            href="/shop"
+            class="inline-block rounded-full px-10 py-4 text-sm font-semibold uppercase tracking-widest transition-all"
+            style="background-color: var(--gold); color: #0F0D0A;"
+            onmouseover="this.style.backgroundColor='var(--gold-hover)'"
+            onmouseout="this.style.backgroundColor='var(--gold)'"
+          >
+            Accedi ai Protocolli
+          </a>
+          <a
+            href="/manifesto"
+            class="inline-block rounded-full border px-8 py-4 text-sm font-semibold uppercase tracking-widest transition-all"
+            style="border-color: var(--gold); color: var(--gold);"
+            onmouseover="this.style.backgroundColor='var(--gold)'; this.style.color='#0F0D0A'"
+            onmouseout="this.style.backgroundColor='transparent'; this.style.color='var(--gold)'"
+          >
+            Leggi il Manifesto
+          </a>
+        </div>
+      </ScrollReveal>
     </div>
   </section>
 
