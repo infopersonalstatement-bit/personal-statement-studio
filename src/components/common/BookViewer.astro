@@ -148,9 +148,13 @@ const uid = propId ?? `bv${Math.random().toString(36).slice(2,8)}`;
 .pr-pg-prose p      { margin: 0 0 .75rem; }
 .pr-pg-prose h1,.pr-pg-prose h2,.pr-pg-prose h3 {
   font-family: var(--font-display,'Cormorant Garamond',serif);
-  font-weight: 400; color: var(--text); margin: 0 0 .5rem;
+  font-weight: 400; color: var(--gold); margin: 0 0 .5rem;
+  text-align: center;
 }
-.pr-pg-prose strong { color: var(--text); }
+.pr-pg-prose strong,
+.pr-pg-prose b { color: var(--gold); font-weight: 600; }
+.pr-pg-prose strong[style],
+.pr-pg-prose b[style] { color: var(--gold) !important; }
 .pr-pg-prose em     { color: var(--text-muted); }
 .pr-pg-prose a      { color: var(--gold); }
 .pr-pg-prose ul,.pr-pg-prose ol { margin: 0 0 .75rem; padding-left: 1.4rem; }
