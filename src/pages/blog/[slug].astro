@@ -1,0 +1,238 @@
+---
+import BaseLayout from '../../layouts/BaseLayout.astro';
+import ShareButton from '../../components/common/ShareButton.astro';
+import BookViewer from '../../components/common/BookViewer.astro';
+
+const { slug } = Astro.params;
+
+let articolo: any = null;
+
+const selectFields = 'id, titolo, slug, contenuto, created_at, estratto, pubblicato, seo_titolo, seo_descrizione, seo_og_image, categoria_id, categorie(id, nome, slug)';
+
+// Cerca per slug
+const { data: bySlug } = await Astro.locals.supabase
+  .from('articoli').select(selectFields).eq('slug', slug).maybeSingle();
+
+if (bySlug) {
+  articolo = bySlug;
+} else {
+  const { data: byId } = await Astro.locals.supabase
+    .from('articoli').select(selectFields).eq('id', slug).maybeSingle();
+  if (byId) {
+    if (byId.slug && byId.slug !== slug) return Astro.redirect(`/blog/${byId.slug}`, 301);
+    articolo = byId;
+  }
+}
+
+if (!articolo || !articolo.pubblicato) return Astro.redirect('/blog');
+
+const metaTitle       = articolo.seo_titolo      || articolo.titolo;
+const metaDescription = articolo.seo_descrizione || articolo.estratto || '';
+const metaOgImage     = articolo.seo_og_image    || undefined;
+
+// Tag dell'articolo
+const { data: tagRows } = await Astro.locals.supabase
+  .from('articoli_tag').select('tag(nome, slug)').eq('articolo_id', articolo.id);
+const tags = (tagRows ?? []).map((r: any) => r.tag).filter(Boolean);
+
+// Articoli correlati: stessa categoria, escluso corrente
+const correlati = articolo.categorie?.id
+  ? (await Astro.locals.supabase
+      .from('articoli')
+      .select('titolo, slug, estratto')
+      .eq('pubblicato', true)
+      .eq('categoria_id', articolo.categorie.id)
+      .neq('id', articolo.id)
+      .limit(3)).data ?? []
+  : [];
+
+// Articoli precedente/successivo
+const { data: tutti } = await Astro.locals.supabase
+  .from('articoli').select('titolo, slug, created_at').eq('pubblicato', true)
+  .order('created_at', { ascending: false });
+
+const idx        = tutti?.findIndex((a: any) => a.slug === articolo.slug) ?? -1;
+const precedente = tutti && idx >= 0 && idx + 1 < tutti.length ? tutti[idx + 1] : null;
+const successivo = tutti && idx > 0 ? tutti[idx - 1] : null;
+
+const navLinks = [
+  { href: '/',          label: 'Home' },
+  { href: '/manifesto', label: 'Il Manifesto' },
+  { href: '/blog',      label: 'Blog' },
+  { href: '/shop',      label: 'Prodotti' },
+];
+---
+
+<BaseLayout title={metaTitle} description={metaDescription} ogImage={metaOgImage} ogType="article">
+
+  <!-- JSON-LD BlogPosting (schema.org) -->
+  <script slot="jsonld" type="application/ld+json" set:html={JSON.stringify({
+    "@context": "https://schema.org",
+    "@type": "BlogPosting",
+    "headline": metaTitle,
+    "description": metaDescription,
+    "image": metaOgImage
+      ? (metaOgImage.startsWith('http') ? metaOgImage : `${import.meta.env.PUBLIC_SITE_URL}${metaOgImage}`)
+      : `${import.meta.env.PUBLIC_SITE_URL}/og-default.jpg`,
+    "datePublished": articolo.created_at,
+    "dateModified": articolo.created_at,
+    "url": `${import.meta.env.PUBLIC_SITE_URL}/blog/${articolo.slug || articolo.id}`,
+    "inLanguage": "it-IT",
+    "author": {
+      "@type": "Person",
+      "name": "Personal Statement Studio",
+      "url": import.meta.env.PUBLIC_SITE_URL
+    },
+    "publisher": {
+      "@type": "Organization",
+      "name": "Personal Statement Studio",
+      "url": import.meta.env.PUBLIC_SITE_URL,
+      "logo": {
+        "@type": "ImageObject",
+        "url": `${import.meta.env.PUBLIC_SITE_URL}/logo.png`
+      }
+    }
+  })} />
+
+  <!-- Hero compatto con nav -->
+  <section
+    class="relative flex flex-col items-center justify-center overflow-hidden px-6 py-16 text-center"
+    style="min-height: 38vh;"
+  >
+    <div
+      class="pointer-events-none absolute inset-0"
+      style="background: radial-gradient(ellipse 100% 80% at 50% -5%, color-mix(in srgb, var(--gold) 15%, transparent) 0%, transparent 65%);"
+    ></div>
+
+    <div class="mb-8 flex justify-center">
+      <a href="/">
+        <img src="/logo-full.png" alt="Personal Statement Studio" class="logo-full w-44 sm:w-52" />
+      </a>
+    </div>
+
+    <nav class="flex flex-wrap items-center justify-center gap-3">
+      {navLinks.map(link => {
+        const isActive = link.href === '/blog';
+        return (
+          <a
+            href={link.href}
+            class="nav-pill"
+            style={isActive ? 'border-color: var(--gold); color: var(--gold); background-color: color-mix(in srgb, var(--gold) 8%, transparent);' : ''}
+          >
+            {link.label}
+          </a>
+        );
+      })}
+    </nav>
+  </section>
+
+  <!-- Reader full-width -->
+  <article>
+
+    <BookViewer
+      content={articolo.contenuto}
+      title={articolo.titolo}
+      subtitle={new Date(articolo.created_at).toLocaleDateString('it-IT', { day: '2-digit', month: 'long', year: 'numeric' })}
+      id={`blog-${articolo.id}`}
+    />
+
+    <!-- Contenuto sotto il reader: data, condivisione, nav articoli -->
+    <div class="mx-auto max-w-3xl px-6 pb-24">
+
+      <!-- Data + Categoria + Tag + Condividi -->
+      <div class="mt-8 border-b pb-8" style="border-color: var(--border);">
+        <div class="flex flex-wrap items-center justify-between gap-4 mb-4">
+          <time class="text-[10px] font-semibold uppercase tracking-[0.3em]" style="color:var(--gold);" datetime={articolo.created_at}>
+            {new Date(articolo.created_at).toLocaleDateString('it-IT', { day: '2-digit', month: 'long', year: 'numeric' })}
+          </time>
+          <ShareButton title={articolo.titolo} description={articolo.estratto ?? ''} type="articolo" />
+        </div>
+        <!-- Categoria + Tag -->
+        {(articolo.categorie || tags.length > 0) && (
+          <div class="flex flex-wrap items-center gap-2">
+            {articolo.categorie && (
+              <a href={`/blog/categoria/${articolo.categorie.slug}`}
+                class="rounded-full border px-3 py-1 text-[10px] font-semibold uppercase tracking-widest transition-colors"
+                style="border-color:var(--gold); color:var(--gold);"
+                onmouseover="this.style.backgroundColor='color-mix(in srgb,var(--gold) 10%,transparent)'"
+                onmouseout="this.style.backgroundColor='transparent'">
+                {articolo.categorie.nome}
+              </a>
+            )}
+            {tags.map((t: any) => (
+              <a href={`/blog/tag/${t.slug}`}
+                class="rounded-full border px-3 py-1 text-[10px] uppercase tracking-widest transition-colors"
+                style="border-color:var(--border); color:var(--text-muted);"
+                onmouseover="this.style.borderColor='var(--gold)';this.style.color='var(--gold)'"
+                onmouseout="this.style.borderColor='var(--border)';this.style.color='var(--text-muted)'">
+                #{t.nome}
+              </a>
+            ))}
+          </div>
+        )}
+      </div>
+
+      <!-- Articoli correlati -->
+      {correlati.length > 0 && (
+        <div class="mt-12">
+          <p class="mb-4 text-[10px] font-semibold uppercase tracking-[0.25em]" style="color:var(--text-muted);">Nella stessa categoria</p>
+          <div class="grid gap-4 sm:grid-cols-3">
+            {correlati.map((c: any) => (
+              <a href={`/blog/${c.slug}`}
+                class="rounded-xl border p-4 transition-all duration-200"
+                style="border-color:var(--border); background-color:var(--bg-card);"
+                onmouseover="this.style.borderColor='var(--gold)'"
+                onmouseout="this.style.borderColor='var(--border)'">
+                <p class="font-display text-sm font-light leading-snug" style="color:var(--text);">{c.titolo}</p>
+                {c.estratto && <p class="mt-1 text-xs line-clamp-2" style="color:var(--text-muted);">{c.estratto}</p>}
+              </a>
+            ))}
+          </div>
+        </div>
+      )}
+
+      <!-- Separatore -->
+      <div class="my-12 flex items-center gap-4">
+        <div class="h-px flex-1" style="background-color: var(--border);"></div>
+        <div class="h-1.5 w-1.5 rounded-full" style="background-color: var(--gold);"></div>
+        <div class="h-px flex-1" style="background-color: var(--border);"></div>
+      </div>
+
+      <!-- Navigazione articoli precedente/successivo -->
+      <div class="grid gap-4 sm:grid-cols-2">
+        {precedente ? (
+          <a
+            href={`/blog/${precedente.slug}`}
+            class="group rounded-2xl border p-5 transition-all duration-200"
+            style="border-color: var(--border); background-color: var(--bg-card);"
+            onmouseover="this.style.borderColor='var(--gold)'"
+            onmouseout="this.style.borderColor='var(--border)'"
+          >
+            <p class="mb-1 text-[10px] font-semibold uppercase tracking-widest" style="color: var(--text-muted);">← Articolo precedente</p>
+            <p class="font-display text-lg font-light leading-snug" style="color: var(--text);">{precedente.titolo}</p>
+          </a>
+        ) : <div />}
+
+        {successivo ? (
+          <a
+            href={`/blog/${successivo.slug}`}
+            class="group rounded-2xl border p-5 text-right transition-all duration-200"
+            style="border-color: var(--border); background-color: var(--bg-card);"
+            onmouseover="this.style.borderColor='var(--gold)'"
+            onmouseout="this.style.borderColor='var(--border)'"
+          >
+            <p class="mb-1 text-[10px] font-semibold uppercase tracking-widest" style="color: var(--text-muted);">Articolo successivo →</p>
+            <p class="font-display text-lg font-light leading-snug" style="color: var(--text);">{successivo.titolo}</p>
+          </a>
+        ) : <div />}
+      </div>
+
+      <!-- Torna al blog -->
+      <div class="mt-10 flex justify-center">
+        <a href="/blog" class="cta-main">← Tutti gli articoli</a>
+      </div>
+
+    </div>
+  </article>
+
+</BaseLayout>

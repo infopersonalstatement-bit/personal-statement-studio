@@ -1,0 +1,421 @@
+---
+import BaseLayout from '../../layouts/BaseLayout.astro';
+import ShareButton from '../../components/common/ShareButton.astro';
+import BookViewer from '../../components/common/BookViewer.astro';
+
+const { slug } = Astro.params;
+const user    = Astro.locals.user;
+const isAdmin = Astro.locals.isAdmin;
+
+// Cerca prima per slug, poi per ID (compatibilità link vecchi con UUID)
+let prodotto: any = null;
+
+const selectFields = 'id, nome, prezzo, prezzo_originale, descrizione, anteprima, seo_titolo, seo_descrizione, seo_og_image, slug, categoria_id, categorie(id, nome, slug)';
+
+const { data: bySlug } = await Astro.locals.supabase
+  .from('prodotti').select(selectFields).eq('slug', slug).maybeSingle();
+
+if (bySlug) {
+  prodotto = bySlug;
+} else {
+  const { data: byId } = await Astro.locals.supabase
+    .from('prodotti').select(selectFields).eq('id', slug).maybeSingle();
+  if (byId) {
+    if (byId.slug) return Astro.redirect(`/shop/${byId.slug}`, 301);
+    prodotto = byId;
+  }
+}
+
+if (!prodotto) return Astro.redirect('/shop');
+
+const metaTitle       = prodotto.seo_titolo      || prodotto.nome;
+const metaDescription = prodotto.seo_descrizione || prodotto.descrizione || '';
+const metaOgImage     = prodotto.seo_og_image    || undefined;
+
+// Gli admin vedono tutto senza restrizioni
+let hasPurchased = isAdmin;
+
+if (user && !isAdmin) {
+  const { data: acquisto } = await Astro.locals.supabase
+    .from('acquisti')
+    .select('id')
+    .eq('utente_id', user.id)
+    .eq('prodotto_id', prodotto.id)
+    .maybeSingle();
+  hasPurchased = !!acquisto;
+}
+
+const paypalClientId = import.meta.env.PAYPAL_CLIENT_ID;
+
+// URL canonico
+const productUrl = prodotto.slug ? `/shop/${prodotto.slug}` : `/shop/${prodotto.id}`;
+
+// Calcolo sconto
+const prezzoOriginale = prodotto.prezzo_originale && prodotto.prezzo_originale > prodotto.prezzo
+  ? Number(prodotto.prezzo_originale) : null;
+const percentualeSconto = prezzoOriginale
+  ? Math.round((1 - prodotto.prezzo / prezzoOriginale) * 100) : null;
+
+// Tag del prodotto
+const { data: tagRows } = await Astro.locals.supabase
+  .from('prodotti_tag').select('tag(nome, slug)').eq('prodotto_id', prodotto.id);
+const tags = (tagRows ?? []).map((r: any) => r.tag).filter(Boolean);
+
+// Prodotti correlati: stessa categoria
+const correlati = prodotto.categorie?.id
+  ? (await Astro.locals.supabase
+      .from('prodotti')
+      .select('nome, slug, prezzo, descrizione')
+      .eq('categoria_id', prodotto.categorie.id)
+      .neq('id', prodotto.id)
+      .limit(3)).data ?? []
+  : [];
+---
+
+<BaseLayout title={metaTitle} description={metaDescription} ogImage={metaOgImage} ogType="product">
+
+  <!-- JSON-LD Product (schema.org) -->
+  <script slot="jsonld" type="application/ld+json" set:html={JSON.stringify({
+    "@context": "https://schema.org",
+    "@type": "Product",
+    "name": prodotto.nome,
+    "description": metaDescription,
+    "image": metaOgImage
+      ? (metaOgImage.startsWith('http') ? metaOgImage : `${import.meta.env.PUBLIC_SITE_URL}${metaOgImage}`)
+      : `${import.meta.env.PUBLIC_SITE_URL}/og-default.jpg`,
+    "url": `${import.meta.env.PUBLIC_SITE_URL}${productUrl}`,
+    "brand": {
+      "@type": "Organization",
+      "name": "Personal Statement Studio"
+    },
+    "offers": {
+      "@type": "Offer",
+      "price": Number(prodotto.prezzo).toFixed(2),
+      "priceCurrency": "EUR",
+      "availability": "https://schema.org/InStock",
+      "url": `${import.meta.env.PUBLIC_SITE_URL}${productUrl}`,
+      ...(prezzoOriginale ? { "priceValidUntil": new Date(Date.now() + 30 * 24 * 60 * 60 * 1000).toISOString().split('T')[0] } : {})
+    }
+  })} />
+
+  <!-- Hero compatto con nav -->
+  <section
+    class="relative flex flex-col items-center justify-center overflow-hidden px-6 py-16 text-center"
+    style="min-height: 36vh;"
+  >
+    <div
+      class="pointer-events-none absolute inset-0"
+      style="background: radial-gradient(ellipse 100% 80% at 50% -5%, color-mix(in srgb, var(--gold) 15%, transparent) 0%, transparent 65%);"
+    ></div>
+
+    <div class="mb-8 flex justify-center">
+      <a href="/">
+        <img src="/logo-full.png" alt="Personal Statement Studio" class="logo-full w-44 sm:w-52" />
+      </a>
+    </div>
+
+    <nav class="flex flex-wrap items-center justify-center gap-3">
+      {[
+        { href: '/',          label: 'Home' },
+        { href: '/manifesto', label: 'Il Manifesto' },
+        { href: '/blog',      label: 'Blog' },
+        { href: '/shop',      label: 'Prodotti' },
+      ].map(link => (
+        <a
+          href={link.href}
+          class="nav-pill"
+          style={link.href === '/shop' ? 'border-color: var(--gold); color: var(--gold); background-color: color-mix(in srgb, var(--gold) 8%, transparent);' : ''}
+        >
+          {link.label}
+        </a>
+      ))}
+    </nav>
+
+    <!-- Breadcrumb sotto la nav -->
+    <p class="mt-5 text-xs" style="color: var(--text-muted);">
+      <a href="/shop" style="color:var(--text-muted);"
+        onmouseover="this.style.color='var(--gold)'" onmouseout="this.style.color='var(--text-muted)'">Prodotti</a>
+      <span class="mx-2">/</span>
+      <span style="color: var(--text);">{prodotto.nome}</span>
+    </p>
+  </section>
+
+  <!-- Contenuto principale -->
+  <article class="mx-auto max-w-4xl px-6 py-12">
+
+    <div class="grid gap-12 lg:grid-cols-[1fr_320px]">
+
+      <!-- ── Colonna sinistra: contenuto ─────────────────────── -->
+      <div>
+        <div class="mb-6 flex flex-wrap items-center justify-between gap-3">
+          <div class="flex flex-wrap items-center gap-2">
+            {prodotto.categorie ? (
+              <a href={`/shop/categoria/${prodotto.categorie.slug}`}
+                class="text-xs font-semibold uppercase tracking-[0.3em] transition-colors"
+                style="color:var(--gold);"
+                onmouseover="this.style.textDecoration='underline'"
+                onmouseout="this.style.textDecoration='none'">
+                {prodotto.categorie.nome}
+              </a>
+            ) : (
+              <p class="text-xs font-semibold uppercase tracking-[0.3em]" style="color:var(--gold);">
+                Prodotto Digitale · PDF
+              </p>
+            )}
+            {tags.map((t: any) => (
+              <a href={`/shop/tag/${t.slug}`}
+                class="rounded-full border px-2.5 py-0.5 text-[10px] uppercase tracking-widest transition-colors"
+                style="border-color:var(--border); color:var(--text-muted);"
+                onmouseover="this.style.borderColor='var(--gold)';this.style.color='var(--gold)'"
+                onmouseout="this.style.borderColor='var(--border)';this.style.color='var(--text-muted)'">
+                #{t.nome}
+              </a>
+            ))}
+          </div>
+          <ShareButton
+            title={prodotto.nome}
+            description={prodotto.descrizione ?? ''}
+            type="prodotto"
+          />
+        </div>
+
+        <!-- Anteprima — effetto libro sfogliabile -->
+        {prodotto.anteprima ? (
+          <div>
+            <p class="mb-4 text-xs font-semibold uppercase tracking-widest" style="color: var(--text-muted);">
+              {hasPurchased ? 'Contenuto del prodotto' : 'Anteprima del contenuto'}
+            </p>
+
+            <BookViewer
+              content={prodotto.anteprima}
+              title={prodotto.nome}
+              subtitle={prodotto.descrizione ? prodotto.descrizione.slice(0, 80) + (prodotto.descrizione.length > 80 ? '…' : '') : undefined}
+              backCover={!hasPurchased ? {
+                message: 'Acquista per accedere al contenuto completo e scaricare il PDF.',
+                ctaLabel: 'Acquista ora',
+                ctaHref: `#acquisto`,
+              } : null}
+              id={`shop-${prodotto.id}`}
+            />
+
+            <!-- Box download (solo se acquistato) -->
+            {hasPurchased && (
+              <div
+                class="mt-6 rounded-2xl border p-6"
+                style="border-color: color-mix(in srgb, var(--gold) 30%, transparent); background-color: color-mix(in srgb, var(--gold) 5%, transparent);"
+              >
+                <p class="mb-2 flex items-center gap-2 text-sm font-semibold" style="color: var(--gold);">
+                  <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z" />
+                  </svg>
+                  Hai acquistato questo prodotto
+                </p>
+                <p class="mb-5 text-sm" style="color: var(--text-muted);">
+                  Puoi scaricare il PDF in qualsiasi momento dalla tua area riservata o direttamente qui.
+                </p>
+                <a
+                  href={`/api/download/${prodotto.id}`}
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  class="inline-flex items-center gap-2 rounded-full px-6 py-3 text-sm font-semibold uppercase tracking-widest transition-all duration-200"
+                  style="background-color: var(--gold); color: #0F0D0A;"
+                  onmouseover="this.style.backgroundColor='var(--gold-hover)'"
+                  onmouseout="this.style.backgroundColor='var(--gold)'"
+                >
+                  <svg xmlns="http://www.w3.org/2000/svg" class="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-4l-4 4m0 0l-4-4m4 4V4" />
+                  </svg>
+                  Scarica il PDF
+                </a>
+              </div>
+            )}
+          </div>
+        ) : (
+          <p class="text-sm italic" style="color: var(--text-muted);">
+            Acquista per accedere al contenuto completo.
+          </p>
+        )}
+      </div>
+
+      <!-- ── Colonna destra: riquadro acquisto ───────────────── -->
+      <aside class="h-fit lg:sticky lg:top-24" id="acquisto">
+        <div
+          class="rounded-2xl border p-7 transition-colors duration-200"
+          style="border-color: var(--border); background-color: color-mix(in srgb, var(--surface) 60%, transparent);"
+        >
+          <div class="mb-1 flex flex-wrap items-baseline gap-3">
+            <p class="font-display text-4xl font-light" style="color: var(--gold);">
+              €{Number(prodotto.prezzo).toFixed(2)}
+            </p>
+            {prezzoOriginale && (
+              <span class="font-display text-xl line-through" style="color: var(--text-muted);">
+                €{prezzoOriginale.toFixed(2)}
+              </span>
+            )}
+            {percentualeSconto && (
+              <span class="rounded-full px-2.5 py-1 text-xs font-bold uppercase tracking-wider"
+                style="background-color: color-mix(in srgb, var(--gold) 15%, transparent); color: var(--gold);">
+                -{percentualeSconto}%
+              </span>
+            )}
+          </div>
+          <p class="mb-6 text-xs uppercase tracking-widest" style="color: var(--text-muted);">Pagamento unico · accesso illimitato</p>
+
+          <div class="mb-5 space-y-2">
+            {[
+              'PDF scaricabile immediatamente',
+              'Accesso permanente',
+              'Disponibile nella tua dashboard',
+            ].map((feat) => (
+              <div class="flex items-center gap-2 text-sm" style="color: var(--text-muted);">
+                <svg xmlns="http://www.w3.org/2000/svg" class="h-4 w-4 flex-shrink-0" fill="none" viewBox="0 0 24 24" stroke="currentColor" style="color: var(--gold);">
+                  <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7" />
+                </svg>
+                {feat}
+              </div>
+            ))}
+          </div>
+
+          <div class="h-px mb-5" style="background-color: var(--border);"></div>
+
+          {hasPurchased ? (
+            <a
+              href={`/api/download/${prodotto.id}`}
+              target="_blank"
+              rel="noopener noreferrer"
+              class="block w-full rounded-full py-3 text-center text-sm font-semibold uppercase tracking-widest transition-all duration-200"
+              style="background-color: var(--gold); color: #0F0D0A;"
+              onmouseover="this.style.backgroundColor='var(--gold-hover)'"
+              onmouseout="this.style.backgroundColor='var(--gold)'"
+            >
+              Scarica il PDF
+            </a>
+          ) : user ? (
+            <div>
+              <p class="mb-3 text-center text-xs" style="color: var(--text-muted);">Acquista in modo sicuro con PayPal</p>
+              <div id="paypal-button-container"></div>
+              <div id="paypal-msg" class="mt-3 hidden rounded-xl px-4 py-2 text-center text-sm"></div>
+            </div>
+          ) : (
+            <div class="text-center">
+              <p class="mb-4 text-sm" style="color: var(--text-muted);">
+                Accedi per acquistare questo prodotto
+              </p>
+              <a
+                href={`/auth/login?redirect=${productUrl}`}
+                class="block w-full rounded-full py-3 text-center text-sm font-semibold uppercase tracking-widest transition-all duration-200"
+                style="background-color: var(--gold); color: #0F0D0A;"
+                onmouseover="this.style.backgroundColor='var(--gold-hover)'"
+                onmouseout="this.style.backgroundColor='var(--gold)'"
+              >
+                Accedi per acquistare
+              </a>
+              <a
+                href={`/auth/registrazione?redirect=${productUrl}`}
+                class="mt-2 block text-xs uppercase tracking-widest transition-colors"
+                style="color: var(--text-muted);"
+                onmouseover="this.style.color='var(--gold)'" onmouseout="this.style.color='var(--text-muted)'"
+              >
+                Oppure registrati gratis →
+              </a>
+            </div>
+          )}
+        </div>
+      </aside>
+
+    </div>
+  </article>
+
+  <!-- Azioni finali: torna allo shop + condividi -->
+  <!-- Prodotti correlati -->
+  {correlati.length > 0 && (
+    <div class="mx-auto max-w-4xl px-6 pb-12">
+      <p class="mb-5 text-[10px] font-semibold uppercase tracking-[0.25em]" style="color:var(--text-muted);">Nella stessa categoria</p>
+      <div class="grid gap-5 sm:grid-cols-3">
+        {correlati.map((c: any) => (
+          <a href={`/shop/${c.slug ?? c.id}`}
+            class="rounded-xl border p-5 transition-all duration-200"
+            style="border-color:var(--border); background-color:var(--bg-card);"
+            onmouseover="this.style.borderColor='var(--gold)'"
+            onmouseout="this.style.borderColor='var(--border)'">
+            <p class="font-display text-base font-light leading-snug mb-2" style="color:var(--text);">{c.nome}</p>
+            {c.descrizione && <p class="text-xs line-clamp-2 mb-3" style="color:var(--text-muted);">{c.descrizione}</p>}
+            <p class="font-display text-xl font-light" style="color:var(--gold);">€{Number(c.prezzo).toFixed(2)}</p>
+          </a>
+        ))}
+      </div>
+    </div>
+  )}
+
+  <div class="pb-20 flex flex-wrap items-center justify-center gap-4">
+    <a href="/shop" class="cta-main">← Tutti i prodotti</a>
+    <ShareButton
+      title={prodotto.nome}
+      description={prodotto.descrizione ?? ''}
+      type="prodotto"
+    />
+  </div>
+
+</BaseLayout>
+
+{user && !hasPurchased && (
+  <>
+    <script
+      is:inline
+      src={`https://www.paypal.com/sdk/js?client-id=${paypalClientId}&currency=EUR`}
+    ></script>
+    <script
+      is:inline
+      define:vars={{ productId: prodotto.id }}
+    >
+      paypal.Buttons({
+        style: { shape: 'pill', color: 'gold', layout: 'vertical', label: 'pay' },
+        createOrder: async () => {
+          const res = await fetch('/api/paypal/create-order', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ productId }),
+          });
+          const data = await res.json();
+          if (!res.ok) throw new Error(data.error || 'Errore creazione ordine');
+          return data.id;
+        },
+        onApprove: async (data) => {
+          const msgEl = document.getElementById('paypal-msg');
+          if (msgEl) {
+            msgEl.className = 'mt-3 rounded-xl px-4 py-2 text-center text-sm';
+            msgEl.style.backgroundColor = 'color-mix(in srgb, var(--gold) 10%, transparent)';
+            msgEl.style.color = 'var(--gold)';
+            msgEl.textContent = 'Pagamento in elaborazione…';
+            msgEl.classList.remove('hidden');
+          }
+          const res = await fetch('/api/paypal/capture-order', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ orderId: data.orderID, productId }),
+          });
+          if (res.ok) {
+            window.location.reload();
+          } else {
+            if (msgEl) {
+              msgEl.style.backgroundColor = 'color-mix(in srgb, #ef4444 10%, transparent)';
+              msgEl.style.color = '#ef4444';
+              msgEl.textContent = 'Pagamento ricevuto, ma errore nel salvataggio. Contattaci a info@personalstatementstudio.com';
+            }
+          }
+        },
+        onError: (err) => {
+          console.error('PayPal error', err);
+          const msgEl = document.getElementById('paypal-msg');
+          if (msgEl) {
+            msgEl.className = 'mt-3 rounded-xl px-4 py-2 text-center text-sm';
+            msgEl.style.backgroundColor = 'color-mix(in srgb, #ef4444 10%, transparent)';
+            msgEl.style.color = '#ef4444';
+            msgEl.textContent = 'Si è verificato un errore con PayPal. Riprova.';
+            msgEl.classList.remove('hidden');
+          }
+        },
+      }).render('#paypal-button-container');
+    </script>
+  </>
+)}

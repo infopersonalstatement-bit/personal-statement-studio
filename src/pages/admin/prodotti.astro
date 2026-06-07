@@ -1,0 +1,358 @@
+---
+import AdminLayout from '../../layouts/AdminLayout.astro';
+import { createSupabaseAdminClient } from '../../lib/supabase/server';
+import SeoFields from '../../components/admin/SeoFields.astro';
+import { processOgImage } from '../../lib/og-image';
+
+const supabase = createSupabaseAdminClient();
+
+let successMsg = '';
+let errorMsg = '';
+
+// ─── Gestione form POST ───────────────────────────────────────────────────────
+if (Astro.request.method === 'POST') {
+  try {
+    const formData = await Astro.request.formData();
+    const action = formData.get('action') as string;
+
+    if (action === 'crea') {
+      const nome            = (formData.get('nome')            as string)?.trim();
+      const descrizione     = (formData.get('descrizione')     as string)?.trim();
+      const anteprima       = (formData.get('anteprima')       as string)?.trim();
+      const prezzo          = parseFloat(formData.get('prezzo') as string);
+      const prezzoOrigRaw   = (formData.get('prezzo_originale') as string)?.trim();
+      const prezzo_originale = prezzoOrigRaw ? parseFloat(prezzoOrigRaw) : null;
+      const seo_titolo      = (formData.get('seo_titolo')      as string)?.trim() || null;
+      const seo_descrizione = (formData.get('seo_descrizione') as string)?.trim() || null;
+      const seo_og_image    = await processOgImage(formData);
+      let   slugRaw         = (formData.get('slug')            as string)?.trim();
+      if (!slugRaw && nome) slugRaw = nome.toLowerCase().replace(/[^a-z0-9]+/g,'-').replace(/^-+|-+$/g,'');
+      const pdfFile     = formData.get('pdf') as File | null;
+
+      if (!nome || isNaN(prezzo) || prezzo <= 0) {
+        errorMsg = 'Nome e prezzo (> 0) sono obbligatori.';
+      } else if (!pdfFile || pdfFile.size === 0) {
+        errorMsg = 'Carica un file PDF.';
+      } else if (!pdfFile.name.toLowerCase().endsWith('.pdf')) {
+        errorMsg = 'Il file deve essere in formato PDF.';
+      } else {
+        // Upload PDF su Storage (bucket: prodotti-digitali)
+        const safeName  = nome.toLowerCase().replace(/[^a-z0-9]+/g, '-');
+        const fileName  = `${safeName}-${Date.now()}.pdf`;
+        const arrayBuf  = await pdfFile.arrayBuffer();
+        const fileBytes = new Uint8Array(arrayBuf);
+
+        const { error: storageErr } = await supabase.storage
+          .from('prodotti-digitali')
+          .upload(`pdfs/${fileName}`, fileBytes, {
+            contentType: 'application/pdf',
+            upsert: false,
+          });
+
+        if (storageErr) {
+          errorMsg = `Errore upload PDF: ${storageErr.message}`;
+        } else {
+          const { error: dbErr } = await supabase.from('prodotti').insert({
+            nome,
+            descrizione:     descrizione || null,
+            anteprima:       anteprima   || null,
+            prezzo,
+            prezzo_originale: (prezzo_originale && prezzo_originale > prezzo) ? prezzo_originale : null,
+            file_path:       `pdfs/${fileName}`,
+            slug:            slugRaw     || null,
+            seo_titolo,
+            seo_descrizione,
+            seo_og_image,
+          });
+
+          if (dbErr) {
+            errorMsg = `PDF caricato, ma errore DB: ${dbErr.message}`;
+          } else {
+            successMsg = `Prodotto "${nome}" creato con successo!`;
+          }
+        }
+      }
+    }
+
+    if (action === 'elimina') {
+      const id = formData.get('id') as string;
+      // recupera file_path prima di eliminare
+      const { data: prod } = await supabase
+        .from('prodotti')
+        .select('file_path')
+        .eq('id', id)
+        .single();
+
+      const { error: dbErr } = await supabase.from('prodotti').delete().eq('id', id);
+
+      if (dbErr) {
+        errorMsg = `Errore eliminazione: ${dbErr.message}`;
+      } else {
+        if (prod?.file_path) {
+          await supabase.storage.from('prodotti-digitali').remove([prod.file_path]);
+        }
+        successMsg = 'Prodotto eliminato.';
+      }
+    }
+  } catch (e: any) {
+    errorMsg = `Errore imprevisto: ${e.message}`;
+  }
+}
+
+// ─── Lista prodotti ───────────────────────────────────────────────────────────
+const { data: prodotti, error: listErr } = await supabase
+  .from('prodotti')
+  .select('id, nome, prezzo, descrizione, slug, created_at')
+  .order('created_at', { ascending: false });
+---
+
+<AdminLayout title="Prodotti & PDF" activeNav="prodotti">
+
+  <!-- Feedback -->
+  {successMsg && (
+    <div class="mb-6 rounded-xl border border-green-600/40 bg-green-600/10 px-5 py-3 text-sm text-green-400">{successMsg}</div>
+  )}
+  {errorMsg && (
+    <div class="mb-6 rounded-xl border border-red-600/40 bg-red-600/10 px-5 py-3 text-sm text-red-400">{errorMsg}</div>
+  )}
+
+  <!-- Form crea nuovo prodotto -->
+  <section class="mb-14 rounded-2xl border p-8" style="border-color: var(--border); background-color: color-mix(in srgb, var(--surface) 40%, transparent);">
+    <h2 class="mb-6 font-display text-2xl font-light" style="color: var(--text);">Crea nuovo prodotto</h2>
+    <form method="POST" enctype="multipart/form-data" class="space-y-5">
+      <input type="hidden" name="action" value="crea" />
+
+      <div class="grid gap-5 sm:grid-cols-3">
+        <div>
+          <label class="mb-1.5 block text-xs font-semibold uppercase tracking-widest" style="color: var(--text-muted);">
+            Nome prodotto *
+          </label>
+          <input
+            type="text"
+            name="nome"
+            required
+            placeholder="Es. Guida alla Chiarezza Mentale"
+            class="auth-input w-full"
+          />
+        </div>
+        <div>
+          <label class="mb-1.5 block text-xs font-semibold uppercase tracking-widest" style="color: var(--text-muted);">
+            Prezzo (€) *
+          </label>
+          <input
+            type="number"
+            name="prezzo"
+            required
+            min="0.01"
+            step="0.01"
+            placeholder="29.00"
+            class="auth-input w-full"
+          />
+        </div>
+        <div>
+          <label class="mb-1.5 block text-xs font-semibold uppercase tracking-widest" style="color: var(--text-muted);">
+            Prezzo originale (€) <span class="normal-case font-normal" style="color:var(--text-muted);">— barrato, opzionale</span>
+          </label>
+          <input
+            type="number"
+            name="prezzo_originale"
+            min="0.01"
+            step="0.01"
+            placeholder="49.00"
+            class="auth-input w-full"
+          />
+          <p class="mt-1 text-xs" style="color:var(--text-muted);">Inserisci solo se vuoi mostrare uno sconto. Deve essere maggiore del prezzo attuale.</p>
+        </div>
+      </div>
+
+      <div>
+        <label class="mb-1.5 block text-xs font-semibold uppercase tracking-widest" style="color: var(--text-muted);">
+          Descrizione breve <span class="normal-case" style="color:var(--text-muted);">(appare sulle card)</span>
+        </label>
+        <textarea
+          name="descrizione"
+          rows="2"
+          placeholder="Una riga che cattura l'essenza del prodotto…"
+          class="auth-input w-full resize-y"
+        ></textarea>
+      </div>
+
+      <div>
+        <label class="mb-1.5 block text-xs font-semibold uppercase tracking-widest" style="color: var(--text-muted);">
+          Anteprima pubblica <span class="normal-case" style="color:var(--text-muted);">(visibile a tutti nella pagina prodotto)</span>
+        </label>
+        <!-- Editor WYSIWYG -->
+        <div id="editor-anteprima" style="min-height: 220px;"></div>
+        <input type="hidden" name="anteprima" id="anteprima-hidden" />
+        <p class="mt-1 text-xs" style="color:var(--text-muted);">Usa la barra in alto per formattare il testo — il risultato sarà mostrato come anteprima prima dell'acquisto.</p>
+      </div>
+
+      <div>
+        <label class="mb-1.5 block text-xs font-semibold uppercase tracking-widest" style="color: var(--text-muted);">
+          File PDF * <span class="normal-case" style="color:var(--text-muted);">(verrà salvato in modo sicuro)</span>
+        </label>
+        <div
+          class="flex items-center gap-4 rounded-xl border-2 border-dashed px-5 py-6 transition-colors duration-200"
+          style="border-color: var(--border);"
+          id="dropzone"
+        >
+          <svg xmlns="http://www.w3.org/2000/svg" class="h-8 w-8 flex-shrink-0" fill="none" viewBox="0 0 24 24" stroke="currentColor" style="color:var(--gold)">
+            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.5" d="M7 16a4 4 0 01-.88-7.903A5 5 0 1115.9 6L16 6a5 5 0 011 9.9M15 13l-3-3m0 0l-3 3m3-3v12" />
+          </svg>
+          <div class="flex-1">
+            <p class="text-sm" style="color:var(--text);">Seleziona il PDF da caricare</p>
+            <p class="text-xs" style="color:var(--text-muted);">Solo file .pdf · Max 50MB</p>
+          </div>
+          <input
+            type="file"
+            name="pdf"
+            accept=".pdf,application/pdf"
+            required
+            id="pdf-input"
+            class="absolute opacity-0"
+            style="width:1px; height:1px;"
+          />
+          <label
+            for="pdf-input"
+            class="cursor-pointer rounded-full px-4 py-2 text-xs font-semibold uppercase tracking-widest transition-all duration-200"
+            style="background-color: var(--gold); color: #0F0D0A;"
+          >
+            Scegli file
+          </label>
+        </div>
+        <p id="pdf-filename" class="mt-1.5 text-xs" style="color:var(--gold);"></p>
+      </div>
+
+      <SeoFields />
+
+      <div class="pt-2">
+        <button type="submit" class="auth-submit">
+          Carica e pubblica prodotto
+        </button>
+      </div>
+    </form>
+  </section>
+
+  <!-- Lista prodotti esistenti -->
+  <section>
+    <h2 class="mb-5 font-display text-2xl font-light" style="color: var(--text);">Prodotti pubblicati</h2>
+
+    {listErr && (
+      <p class="text-sm text-red-400">Errore caricamento: {listErr.message}</p>
+    )}
+
+    {prodotti && prodotti.length > 0 ? (
+      <div class="overflow-x-auto rounded-2xl border" style="border-color: var(--border);">
+        <table class="w-full text-sm">
+          <thead>
+            <tr style="border-bottom: 1px solid var(--border); background-color: color-mix(in srgb, var(--surface) 60%, transparent);">
+              <th class="px-5 py-3 text-left text-xs font-semibold uppercase tracking-widest" style="color: var(--text-muted);">Nome</th>
+              <th class="px-5 py-3 text-left text-xs font-semibold uppercase tracking-widest" style="color: var(--text-muted);">Prezzo</th>
+              <th class="px-5 py-3 text-left text-xs font-semibold uppercase tracking-widest" style="color: var(--text-muted);">Creato</th>
+              <th class="px-5 py-3 text-left text-xs font-semibold uppercase tracking-widest" style="color: var(--text-muted);">Azioni</th>
+            </tr>
+          </thead>
+          <tbody>
+            {prodotti.map((p: any) => (
+              <tr style="border-bottom: 1px solid var(--border);">
+                <td class="px-5 py-4">
+                  <p class="font-medium" style="color: var(--text);">{p.nome}</p>
+                  {p.descrizione && (
+                    <p class="mt-0.5 text-xs line-clamp-1" style="color: var(--text-muted);">{p.descrizione}</p>
+                  )}
+                  <a
+                    href={`/shop/${p.slug ?? p.id}`}
+                    target="_blank"
+                    class="mt-1 inline-block text-xs"
+                    style="color: var(--gold); opacity: 0.7;"
+                    onmouseover="this.style.opacity='1'"
+                    onmouseout="this.style.opacity='0.7'"
+                  >
+                    /shop/{p.slug ?? p.id} ↗
+                  </a>
+                </td>
+                <td class="px-5 py-4 font-semibold" style="color: var(--gold);">€{Number(p.prezzo).toFixed(2)}</td>
+                <td class="px-5 py-4 text-xs" style="color: var(--text-muted);">
+                  {new Date(p.created_at).toLocaleDateString('it-IT', { day: '2-digit', month: 'short', year: 'numeric' })}
+                </td>
+                <td class="px-5 py-4">
+                  <div class="flex gap-2">
+                    <a
+                      href={`/admin/prodotti/${p.id}`}
+                      class="rounded-full border px-3 py-1 text-xs transition-all duration-200"
+                      style="border-color: var(--border); color: var(--text-muted);"
+                      onmouseover="this.style.borderColor='var(--gold)'; this.style.color='var(--gold)'"
+                      onmouseout="this.style.borderColor='var(--border)'; this.style.color='var(--text-muted)'"
+                    >
+                      Modifica
+                    </a>
+                    <form method="POST" onsubmit="return confirm('Eliminare definitivamente questo prodotto?')">
+                      <input type="hidden" name="action" value="elimina" />
+                      <input type="hidden" name="id" value={p.id} />
+                      <button
+                        type="submit"
+                        class="rounded-full border px-3 py-1 text-xs transition-all duration-200"
+                        style="border-color: var(--border); color: var(--text-muted);"
+                        onmouseover="this.style.borderColor='#ef4444'; this.style.color='#ef4444'"
+                        onmouseout="this.style.borderColor='var(--border)'; this.style.color='var(--text-muted)'"
+                      >
+                        Elimina
+                      </button>
+                    </form>
+                  </div>
+                </td>
+              </tr>
+            ))}
+          </tbody>
+        </table>
+      </div>
+    ) : (
+      <p class="text-sm" style="color: var(--text-muted);">Nessun prodotto ancora pubblicato.</p>
+    )}
+  </section>
+
+</AdminLayout>
+
+<script>
+  const input = document.getElementById('pdf-input') as HTMLInputElement;
+  const label = document.getElementById('pdf-filename') as HTMLParagraphElement;
+  if (input && label) {
+    input.addEventListener('change', () => {
+      const file = input.files?.[0];
+      label.textContent = file ? `✔ ${file.name} (${(file.size / 1024 / 1024).toFixed(1)} MB)` : '';
+    });
+  }
+</script>
+
+<!-- Quill WYSIWYG -->
+<link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/quill@2/dist/quill.snow.css" />
+<script is:inline src="https://cdn.jsdelivr.net/npm/quill@2/dist/quill.js"></script>
+<script is:inline>
+(function () {
+  const toolbarOptions = [
+    [{ header: [1, 2, 3, false] }],
+    [{ size: ['small', false, 'large', 'huge'] }],
+    ['bold', 'italic', 'underline', 'strike'],
+    [{ color: [] }, { background: [] }],
+    [{ list: 'ordered' }, { list: 'bullet' }],
+    ['blockquote', 'link'],
+    ['clean'],
+  ];
+
+  const quill = new Quill('#editor-anteprima', {
+    theme: 'snow',
+    placeholder: 'Scrivi qui l\'anteprima del prodotto…',
+    modules: { toolbar: toolbarOptions },
+  });
+
+  // Copia HTML nell'input nascosto prima dell'invio
+  const form = document.querySelector('form[enctype]');
+  if (form) {
+    form.addEventListener('submit', () => {
+      const hidden = document.getElementById('anteprima-hidden');
+      if (hidden) hidden.value = quill.root.innerHTML === '<p><br></p>' ? '' : quill.root.innerHTML;
+    });
+  }
+})();
+</script>
+

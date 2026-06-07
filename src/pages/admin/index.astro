@@ -1,0 +1,154 @@
+---
+import AdminLayout from '../../layouts/AdminLayout.astro';
+import { createSupabaseAdminClient } from '../../lib/supabase/server';
+
+const supabase = createSupabaseAdminClient();
+
+// Carica statistiche in parallelo
+const [
+  { count: totUtenti },
+  { count: totProdotti },
+  { count: totAcquisti },
+  { count: totArticoli },
+  { data: ultimiAcquisti },
+  { data: ultimiDownload },
+] = await Promise.all([
+  supabase.from('utenti').select('*', { count: 'exact', head: true }),
+  supabase.from('prodotti').select('*', { count: 'exact', head: true }),
+  supabase.from('acquisti').select('*', { count: 'exact', head: true }),
+  supabase.from('articoli').select('*', { count: 'exact', head: true }),
+  supabase
+    .from('admin_acquisti')
+    .select('id, created_at, utente_email, prodotto_nome, prodotto_prezzo')
+    .order('created_at', { ascending: false })
+    .limit(5),
+  supabase
+    .from('admin_download_log')
+    .select('id, created_at, ip_address, utente_email, prodotto_nome')
+    .order('created_at', { ascending: false })
+    .limit(8),
+]);
+
+const stats = [
+  { label: 'Utenti registrati', value: totUtenti ?? 0, icon: '👤', href: null },
+  { label: 'Prodotti attivi',   value: totProdotti ?? 0, icon: '📦', href: '/admin/prodotti' },
+  { label: 'Acquisti totali',   value: totAcquisti ?? 0, icon: '💳', href: null },
+  { label: 'Articoli blog',     value: totArticoli ?? 0, icon: '✍️', href: '/admin/blog' },
+];
+---
+
+<AdminLayout title="Panoramica" activeNav="overview">
+
+  <!-- Stat cards -->
+  <div class="mb-12 grid gap-5 sm:grid-cols-2 lg:grid-cols-4">
+    {stats.map((s) => (
+      <div
+        class="rounded-2xl border p-6 transition-all duration-200"
+        style="border-color: var(--border); background-color: color-mix(in srgb, var(--surface) 60%, transparent);"
+      >
+        <p class="mb-1 text-2xl">{s.icon}</p>
+        <p class="mb-1 font-display text-4xl font-light" style="color: var(--gold);">{s.value}</p>
+        <p class="text-sm" style="color: var(--text-muted);">{s.label}</p>
+        {s.href && (
+          <a
+            href={s.href}
+            class="mt-3 block text-xs uppercase tracking-widest transition-colors"
+            style="color: var(--gold);"
+          >
+            Gestisci →
+          </a>
+        )}
+      </div>
+    ))}
+  </div>
+
+  <!-- Azioni rapide -->
+  <div class="mb-12">
+    <h2 class="mb-5 font-display text-xl font-light" style="color: var(--text);">Azioni rapide</h2>
+    <div class="flex flex-wrap gap-4">
+      <a
+        href="/admin/prodotti"
+        class="rounded-full px-6 py-3 text-sm font-semibold uppercase tracking-widest transition-all duration-200"
+        style="background-color: var(--gold); color: #0F0D0A;"
+        onmouseover="this.style.backgroundColor='var(--gold-hover)'"
+        onmouseout="this.style.backgroundColor='var(--gold)'"
+      >
+        + Nuovo prodotto
+      </a>
+      <a
+        href="/admin/blog"
+        class="rounded-full border px-6 py-3 text-sm font-semibold uppercase tracking-widest transition-all duration-200"
+        style="border-color: var(--gold); color: var(--gold);"
+        onmouseover="this.style.backgroundColor='color-mix(in srgb, var(--gold) 10%, transparent)'"
+        onmouseout="this.style.backgroundColor='transparent'"
+      >
+        + Nuovo articolo
+      </a>
+    </div>
+  </div>
+
+  <!-- Ultimi acquisti -->
+  <div>
+    <h2 class="mb-5 font-display text-xl font-light" style="color: var(--text);">Ultimi acquisti</h2>
+    {ultimiAcquisti && ultimiAcquisti.length > 0 ? (
+      <div class="overflow-x-auto rounded-2xl border" style="border-color: var(--border);">
+        <table class="w-full text-sm">
+          <thead>
+            <tr style="border-bottom: 1px solid var(--border); background-color: color-mix(in srgb, var(--surface) 60%, transparent);">
+              <th class="px-5 py-3 text-left text-xs font-semibold uppercase tracking-widest" style="color: var(--text-muted);">Utente</th>
+              <th class="px-5 py-3 text-left text-xs font-semibold uppercase tracking-widest" style="color: var(--text-muted);">Prodotto</th>
+              <th class="px-5 py-3 text-left text-xs font-semibold uppercase tracking-widest" style="color: var(--text-muted);">Data</th>
+            </tr>
+          </thead>
+          <tbody>
+            {ultimiAcquisti.map((a: any) => (
+              <tr style="border-bottom: 1px solid var(--border);">
+                <td class="px-5 py-3" style="color: var(--text);">{a.utente_email ?? '—'}</td>
+                <td class="px-5 py-3" style="color: var(--text);">{a.prodotto_nome ?? '—'}</td>
+                <td class="px-5 py-3" style="color: var(--text-muted);">
+                  {new Date(a.created_at).toLocaleDateString('it-IT', { day: '2-digit', month: 'short', year: 'numeric' })}
+                </td>
+              </tr>
+            ))}
+          </tbody>
+        </table>
+      </div>
+    ) : (
+      <p class="text-sm" style="color: var(--text-muted);">Nessun acquisto registrato.</p>
+    )}
+  </div>
+
+  <!-- Log download -->
+  <div class="mt-12">
+    <h2 class="mb-5 font-display text-xl font-light" style="color: var(--text);">Log download recenti</h2>
+    {ultimiDownload && ultimiDownload.length > 0 ? (
+      <div class="overflow-x-auto rounded-2xl border" style="border-color: var(--border);">
+        <table class="w-full text-sm">
+          <thead>
+            <tr style="border-bottom: 1px solid var(--border); background-color: color-mix(in srgb, var(--surface) 60%, transparent);">
+              <th class="px-5 py-3 text-left text-xs font-semibold uppercase tracking-widest" style="color: var(--text-muted);">Utente</th>
+              <th class="px-5 py-3 text-left text-xs font-semibold uppercase tracking-widest" style="color: var(--text-muted);">Prodotto</th>
+              <th class="px-5 py-3 text-left text-xs font-semibold uppercase tracking-widest" style="color: var(--text-muted);">IP</th>
+              <th class="px-5 py-3 text-left text-xs font-semibold uppercase tracking-widest" style="color: var(--text-muted);">Data</th>
+            </tr>
+          </thead>
+          <tbody>
+            {ultimiDownload.map((d: any) => (
+              <tr style="border-bottom: 1px solid var(--border);">
+                <td class="px-5 py-3" style="color: var(--text);">{d.utente_email ?? '—'}</td>
+                <td class="px-5 py-3" style="color: var(--text);">{d.prodotto_nome ?? '—'}</td>
+                <td class="px-5 py-3 font-mono text-xs" style="color: var(--text-muted);">{d.ip_address ?? '—'}</td>
+                <td class="px-5 py-3 text-xs" style="color: var(--text-muted);">
+                  {new Date(d.created_at).toLocaleString('it-IT', { day: '2-digit', month: 'short', hour: '2-digit', minute: '2-digit' })}
+                </td>
+              </tr>
+            ))}
+          </tbody>
+        </table>
+      </div>
+    ) : (
+      <p class="text-sm" style="color: var(--text-muted);">Nessun download ancora registrato.</p>
+    )}
+  </div>
+
+</AdminLayout>

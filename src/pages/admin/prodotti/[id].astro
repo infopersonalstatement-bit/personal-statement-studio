@@ -1,0 +1,279 @@
+---
+import AdminLayout from '../../../layouts/AdminLayout.astro';
+import { createSupabaseAdminClient } from '../../../lib/supabase/server';
+import SeoFields from '../../../components/admin/SeoFields.astro';
+import { processOgImage } from '../../../lib/og-image';
+
+const supabase = createSupabaseAdminClient();
+const { id }   = Astro.params;
+
+let successMsg = '';
+let errorMsg   = '';
+
+// ─── Gestione POST ────────────────────────────────────────────────────────────
+if (Astro.request.method === 'POST') {
+  const formData    = await Astro.request.formData();
+  const nome            = (formData.get('nome')            as string)?.trim();
+  const descrizione     = (formData.get('descrizione')     as string)?.trim();
+  const anteprima       = (formData.get('anteprima')       as string)?.trim();
+  const prezzo          = parseFloat(formData.get('prezzo') as string);
+  const prezzoOrigRaw   = (formData.get('prezzo_originale') as string)?.trim();
+  const prezzo_originale = prezzoOrigRaw ? parseFloat(prezzoOrigRaw) : null;
+  const seo_titolo      = (formData.get('seo_titolo')      as string)?.trim() || null;
+  const seo_descrizione = (formData.get('seo_descrizione') as string)?.trim() || null;
+  const seo_og_image    = await processOgImage(formData);
+  const slug            = (formData.get('slug')            as string)?.trim()
+                            .toLowerCase()
+                            .replace(/[àáâ]/g,'a').replace(/[èé]/g,'e')
+                            .replace(/[ìí]/g,'i').replace(/[òó]/g,'o').replace(/[ùú]/g,'u')
+                            .replace(/[^a-z0-9]+/g,'-').replace(/^-+|-+$/g,'') || null;
+  const categoria_id = (formData.get('categoria_id') as string)?.trim() || null;
+  const tagIds       = formData.getAll('tag_ids') as string[];
+  const pdfFile     = formData.get('pdf') as File | null;
+
+  if (!nome || isNaN(prezzo) || prezzo <= 0) {
+    errorMsg = 'Nome e prezzo (> 0) sono obbligatori.';
+  } else {
+    let filePath: string | undefined;
+
+    // Carica nuovo PDF solo se è stato selezionato un file
+    if (pdfFile && pdfFile.size > 0) {
+      if (!pdfFile.name.toLowerCase().endsWith('.pdf')) {
+        errorMsg = 'Il file deve essere in formato PDF.';
+      } else {
+        const safeName  = nome.toLowerCase().replace(/[^a-z0-9]+/g, '-');
+        const fileName  = `${safeName}-${Date.now()}.pdf`;
+        const arrayBuf  = await pdfFile.arrayBuffer();
+        const fileBytes = new Uint8Array(arrayBuf);
+
+        const { error: storageErr } = await supabase.storage
+          .from('prodotti-digitali')
+          .upload(`pdfs/${fileName}`, fileBytes, { contentType: 'application/pdf', upsert: false });
+
+        if (storageErr) errorMsg = `Errore upload PDF: ${storageErr.message}`;
+        else filePath = `pdfs/${fileName}`;
+      }
+    }
+
+    if (!errorMsg) {
+      const updateData: Record<string, any> = {
+        nome,
+        descrizione:     descrizione || null,
+        anteprima:       anteprima   || null,
+        prezzo,
+        prezzo_originale: (prezzo_originale && prezzo_originale > prezzo) ? prezzo_originale : null,
+        seo_titolo,
+        seo_descrizione,
+        seo_og_image,
+        slug,
+        categoria_id,
+      };
+      if (filePath) updateData.file_path = filePath;
+
+      const { error: dbErr } = await supabase.from('prodotti').update(updateData).eq('id', id);
+
+      if (dbErr) {
+        errorMsg = `Errore salvataggio: ${dbErr.message}`;
+      } else {
+        await supabase.from('prodotti_tag').delete().eq('prodotto_id', id);
+        if (tagIds.length > 0) {
+          await supabase.from('prodotti_tag').insert(tagIds.map(tid => ({ prodotto_id: id, tag_id: tid })));
+        }
+        successMsg = 'Prodotto aggiornato con successo!';
+      }
+    }
+  }
+}
+
+// ─── Carica prodotto + categorie + tag ───────────────────────────────────────
+const [
+  { data: prodotto, error: fetchErr },
+  { data: categorie },
+  { data: tagDisponibili },
+] = await Promise.all([
+  supabase.from('prodotti')
+    .select('id, nome, prezzo, prezzo_originale, descrizione, anteprima, file_path, slug, seo_titolo, seo_descrizione, seo_og_image, categoria_id')
+    .eq('id', id).single(),
+  supabase.from('categorie').select('id, nome').in('tipo', ['shop','both']).order('nome'),
+  supabase.from('tag').select('id, nome').in('tipo', ['shop','both']).order('nome'),
+]);
+
+if (fetchErr || !prodotto) return Astro.redirect('/admin/prodotti');
+
+const { data: tagProdotto } = await supabase
+  .from('prodotti_tag').select('tag_id').eq('prodotto_id', id);
+const tagProdottoIds = new Set((tagProdotto ?? []).map((t: any) => t.tag_id));
+
+const anteprimaEsistente   = prodotto.anteprima   ?? '';
+const descrizioneEsistente = prodotto.descrizione ?? '';
+---
+
+<AdminLayout title={`Modifica: ${prodotto.nome}`} activeNav="prodotti">
+
+  <div class="mb-6">
+    <a href="/admin/prodotti"
+      class="text-xs uppercase tracking-widest transition-colors"
+      style="color: var(--text-muted);"
+      onmouseover="this.style.color='var(--gold)'" onmouseout="this.style.color='var(--text-muted)'">
+      ← Torna ai prodotti
+    </a>
+  </div>
+
+  {successMsg && (
+    <div class="mb-6 rounded-xl border border-green-600/40 bg-green-600/10 px-5 py-3 text-sm text-green-400">{successMsg}</div>
+  )}
+  {errorMsg && (
+    <div class="mb-6 rounded-xl border border-red-600/40 bg-red-600/10 px-5 py-3 text-sm text-red-400">{errorMsg}</div>
+  )}
+
+  <section class="rounded-2xl border p-8" style="border-color: var(--border); background-color: color-mix(in srgb, var(--surface) 40%, transparent);">
+    <form method="POST" enctype="multipart/form-data" class="space-y-5">
+
+      <div class="grid gap-5 sm:grid-cols-3">
+        <div>
+          <label class="mb-1.5 block text-xs font-semibold uppercase tracking-widest" style="color: var(--text-muted);">Nome prodotto *</label>
+          <input type="text" name="nome" required value={prodotto.nome} class="auth-input w-full" />
+        </div>
+        <div>
+          <label class="mb-1.5 block text-xs font-semibold uppercase tracking-widest" style="color: var(--text-muted);">Prezzo (€) *</label>
+          <input type="number" name="prezzo" required min="0.01" step="0.01"
+            value={Number(prodotto.prezzo).toFixed(2)} class="auth-input w-full" />
+        </div>
+        <div>
+          <label class="mb-1.5 block text-xs font-semibold uppercase tracking-widest" style="color: var(--text-muted);">
+            Prezzo originale (€) <span class="normal-case font-normal" style="color:var(--text-muted);">— barrato</span>
+          </label>
+          <input type="number" name="prezzo_originale" min="0.01" step="0.01"
+            value={prodotto.prezzo_originale ? Number(prodotto.prezzo_originale).toFixed(2) : ''}
+            placeholder="49.00"
+            class="auth-input w-full" />
+          <p class="mt-1 text-xs" style="color:var(--text-muted);">Lascia vuoto per rimuovere lo sconto.</p>
+        </div>
+      </div>
+
+      <div>
+        <label class="mb-1.5 block text-xs font-semibold uppercase tracking-widest" style="color: var(--text-muted);">
+          Descrizione breve <span class="normal-case" style="color:var(--text-muted);">(appare sulle card)</span>
+        </label>
+        <textarea name="descrizione" rows="2" class="auth-input w-full resize-y">{descrizioneEsistente}</textarea>
+      </div>
+
+      <div>
+        <label class="mb-1.5 block text-xs font-semibold uppercase tracking-widest" style="color: var(--text-muted);">
+          Anteprima pubblica <span class="normal-case" style="color:var(--text-muted);">(visibile nella pagina prodotto)</span>
+        </label>
+        <div id="editor-anteprima" style="min-height: 220px;"></div>
+        <input type="hidden" name="anteprima" id="anteprima-hidden" />
+      </div>
+
+      <div>
+        <label class="mb-1.5 block text-xs font-semibold uppercase tracking-widest" style="color: var(--text-muted);">
+          Sostituisci PDF <span class="normal-case" style="color:var(--text-muted);">(lascia vuoto per mantenere quello attuale)</span>
+        </label>
+        {prodotto.file_path && (
+          <p class="mb-2 text-xs font-mono" style="color:var(--gold);">
+            Attuale: {prodotto.file_path.split('/').pop()}
+          </p>
+        )}
+        <div class="flex items-center gap-4 rounded-xl border-2 border-dashed px-5 py-5 transition-colors duration-200"
+          style="border-color: var(--border);">
+          <input type="file" name="pdf" accept=".pdf,application/pdf" id="pdf-input"
+            class="absolute opacity-0" style="width:1px; height:1px;" />
+          <label for="pdf-input"
+            class="cursor-pointer rounded-full px-4 py-2 text-xs font-semibold uppercase tracking-widest transition-all duration-200"
+            style="background-color: var(--gold); color: #0F0D0A;">
+            Scegli nuovo PDF
+          </label>
+          <p id="pdf-filename" class="text-xs" style="color:var(--gold);"></p>
+        </div>
+      </div>
+
+      <!-- Categoria + Tag -->
+      <div class="grid gap-5 sm:grid-cols-2">
+        <div>
+          <label class="mb-1.5 block text-xs font-semibold uppercase tracking-widest" style="color:var(--text-muted);">Categoria</label>
+          <select name="categoria_id" class="auth-input w-full">
+            <option value="">— Nessuna categoria —</option>
+            {(categorie ?? []).map((c: any) => (
+              <option value={c.id} selected={prodotto.categoria_id === c.id}>{c.nome}</option>
+            ))}
+          </select>
+        </div>
+        <div>
+          <label class="mb-1.5 block text-xs font-semibold uppercase tracking-widest" style="color:var(--text-muted);">Tag</label>
+          <div class="flex flex-wrap gap-2 rounded-xl border p-3" style="border-color:var(--border); background-color:var(--bg);">
+            {(tagDisponibili ?? []).map((t: any) => (
+              <label class="flex cursor-pointer items-center gap-1.5 rounded-full border px-2.5 py-1 text-xs transition-colors"
+                style={`border-color:${tagProdottoIds.has(t.id) ? 'var(--gold)' : 'var(--border)'}; color:${tagProdottoIds.has(t.id) ? 'var(--gold)' : 'var(--text-muted)'};`}
+                id={`tag-lbl-${t.id}`}>
+                <input type="checkbox" name="tag_ids" value={t.id}
+                  checked={tagProdottoIds.has(t.id)} class="sr-only"
+                  onchange={`var l=document.getElementById('tag-lbl-${t.id}');l.style.borderColor=this.checked?'var(--gold)':'var(--border)';l.style.color=this.checked?'var(--gold)':'var(--text-muted)';`} />
+                {t.nome}
+              </label>
+            ))}
+            {(tagDisponibili ?? []).length === 0 && (
+              <p class="text-xs" style="color:var(--text-muted);">Nessun tag. <a href="/admin/categorie" style="color:var(--gold);">Creane uno →</a></p>
+            )}
+          </div>
+        </div>
+      </div>
+
+      <SeoFields
+        seoTitolo={prodotto.seo_titolo ?? ''}
+        seoDescrizione={prodotto.seo_descrizione ?? ''}
+        seoOgImage={prodotto.seo_og_image ?? ''}
+        slug={prodotto.slug ?? ''}
+      />
+
+      <div class="pt-2">
+        <button type="submit" class="auth-submit">Salva modifiche</button>
+      </div>
+    </form>
+  </section>
+
+</AdminLayout>
+
+<link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/quill@2/dist/quill.snow.css" />
+<script is:inline src="https://cdn.jsdelivr.net/npm/quill@2/dist/quill.js"></script>
+<script is:inline define:vars={{ anteprimaEsistente }}>
+(function () {
+  const toolbarOptions = [
+    [{ header: [1, 2, 3, false] }],
+    [{ size: ['small', false, 'large', 'huge'] }],
+    ['bold', 'italic', 'underline', 'strike'],
+    [{ color: [] }, { background: [] }],
+    [{ list: 'ordered' }, { list: 'bullet' }],
+    ['blockquote', 'link'],
+    ['clean'],
+  ];
+
+  const quill = new Quill('#editor-anteprima', {
+    theme: 'snow',
+    modules: { toolbar: toolbarOptions },
+  });
+
+  if (anteprimaEsistente) {
+    quill.root.innerHTML = anteprimaEsistente;
+  }
+
+  const form = document.querySelector('form[enctype]');
+  if (form) {
+    form.addEventListener('submit', () => {
+      const hidden = document.getElementById('anteprima-hidden');
+      const html   = quill.root.innerHTML;
+      if (hidden) hidden.value = html === '<p><br></p>' ? '' : html;
+    });
+  }
+
+  // PDF filename preview
+  const pdfInput = document.getElementById('pdf-input');
+  const pdfLabel = document.getElementById('pdf-filename');
+  if (pdfInput && pdfLabel) {
+    pdfInput.addEventListener('change', () => {
+      const file = pdfInput.files?.[0];
+      pdfLabel.textContent = file ? `✔ ${file.name} (${(file.size/1024/1024).toFixed(1)} MB)` : '';
+    });
+  }
+})();
+</script>

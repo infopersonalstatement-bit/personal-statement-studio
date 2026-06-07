@@ -1,0 +1,464 @@
+---
+interface Props {
+  content: string;
+  title: string;
+  subtitle?: string;        // es. data articolo, NON usare per prezzo
+  backCover?: { message: string; ctaLabel: string; ctaHref: string; } | null;
+  id?: string;
+}
+const { content, title, subtitle, backCover = null, id: propId } = Astro.props;
+const uid = propId ?? `bv${Math.random().toString(36).slice(2,8)}`;
+---
+
+<!-- Contenuto HTML sorgente — nascosto, letto via JS -->
+<div id={`bv-src-${uid}`} style="display:none" set:html={content}></div>
+
+<!-- Reader -->
+<div class="pr-wrap" id={`pr-wrap-${uid}`}
+  data-uid={uid}
+  data-title={title}
+  data-subtitle={subtitle ?? ''}
+  data-back={backCover ? JSON.stringify(backCover) : 'null'}
+>
+  <!-- Topbar navigazione -->
+  <div class="pr-topbar">
+    <button class="pr-nav" id={`pr-prev-${uid}`} type="button" aria-label="Pagina precedente" disabled>
+      <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5">
+        <path stroke-linecap="round" stroke-linejoin="round" d="M15 19l-7-7 7-7"/>
+      </svg>
+    </button>
+    <span class="pr-counter" id={`pr-count-${uid}`}>― / ―</span>
+    <button class="pr-nav" id={`pr-next-${uid}`} type="button" aria-label="Pagina successiva" disabled>
+      <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5">
+        <path stroke-linecap="round" stroke-linejoin="round" d="M9 5l7 7-7 7"/>
+      </svg>
+    </button>
+  </div>
+
+  <!-- Viewport — mostra una pagina alla volta -->
+  <div class="pr-viewport" id={`pr-vp-${uid}`}>
+    <!-- Loader iniziale -->
+    <div class="pr-page pr-loading" id={`pr-loading-${uid}`}>
+      <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24"
+           stroke="currentColor" width="26" height="26" class="pr-spin-icon">
+        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.5"
+          d="M12 6.253v13m0-13C10.832 5.477 9.246 5 7.5 5S4.168 5.477 3 6.253v13C4.168 18.477 5.754 18 7.5 18s3.332.477 4.5 1.253m0-13C13.168 5.477 14.754 5 16.5 5c1.746 0 3.332.477 4.5 1.253v13C19.832 18.477 18.246 18 16.5 18c-1.746 0-3.332.477-4.5 1.253"/>
+      </svg>
+      <span>Preparazione pagine…</span>
+    </div>
+    <!-- Le pagine vere verranno inserite qui via JS -->
+    <div class="pr-track" id={`pr-track-${uid}`} style="display:none"></div>
+  </div>
+
+  <!-- Indicatori pagina -->
+  <div class="pr-dots" id={`pr-dots-${uid}`}></div>
+  <p class="pr-hint">Frecce ← → per navigare · swipe su mobile</p>
+</div>
+
+<style is:global>
+/* ── Contenitore ─────────────────────────────────────── */
+.pr-wrap { width: 100%; display: flex; flex-direction: column; gap: .6rem; }
+
+/* ── Topbar ──────────────────────────────────────────── */
+.pr-topbar {
+  display: flex; align-items: center; justify-content: space-between;
+  padding: 0 .15rem;
+}
+.pr-nav {
+  display: flex; align-items: center; justify-content: center;
+  width: 2.1rem; height: 2.1rem; border-radius: 50%;
+  border: 1px solid var(--border); background: transparent;
+  color: var(--text-muted); cursor: pointer;
+  transition: border-color .2s, color .2s, opacity .2s;
+}
+.pr-nav:hover:not(:disabled) { border-color: var(--gold); color: var(--gold); }
+.pr-nav:disabled { opacity: .2; cursor: not-allowed; }
+.pr-counter {
+  font-size: .72rem; letter-spacing: .08em;
+  color: var(--text-muted); font-variant-numeric: tabular-nums;
+}
+
+/* ── Viewport ────────────────────────────────────────── */
+.pr-viewport {
+  overflow: hidden;
+  border-radius: 6px;
+  border: 1px solid color-mix(in srgb, var(--border) 55%, transparent);
+  box-shadow: 0 8px 32px rgba(0,0,0,.13), 0 2px 8px rgba(0,0,0,.07);
+  background: var(--bg);
+  /* altezza impostata via JS */
+}
+
+/* ── Track (slide) ───────────────────────────────────── */
+.pr-track {
+  display: flex;
+  transition: transform .42s cubic-bezier(.4,0,.2,1);
+  will-change: transform;
+}
+
+/* ── Pagina base ─────────────────────────────────────── */
+.pr-page {
+  flex-shrink: 0;
+  box-sizing: border-box;
+  overflow: hidden;
+  position: relative;
+  background: var(--bg);
+}
+
+/* ── Loader pagina ───────────────────────────────────── */
+.pr-loading {
+  display: flex; flex-direction: column;
+  align-items: center; justify-content: center;
+  gap: .75rem; color: var(--text-muted); font-size: .82rem;
+}
+.pr-spin-icon { color: var(--gold); animation: prSpin 1.6s ease-in-out infinite; }
+@keyframes prSpin { 0%,100%{opacity:1} 50%{opacity:.25} }
+
+/* ── Copertina ───────────────────────────────────────── */
+.pr-pg-cover {
+  width: 100%; height: 100%;
+  display: flex; flex-direction: column;
+  align-items: center; justify-content: center;
+  text-align: center; gap: .9rem;
+  background: linear-gradient(160deg,
+    color-mix(in srgb,var(--gold) 10%,var(--bg)) 0%,
+    var(--bg) 55%,
+    color-mix(in srgb,var(--gold) 5%,var(--bg)) 100%);
+  padding: 2rem 2.5rem;
+  box-sizing: border-box;
+}
+.pr-pg-orn   { font-size: 1.5rem; color: var(--gold); line-height: 1; }
+.pr-pg-title {
+  font-family: var(--font-display,'Cormorant Garamond',serif);
+  font-size: clamp(1.1rem, 3.2vw, 1.55rem);
+  font-weight: 300; line-height: 1.35; color: var(--text); margin: 0;
+}
+.pr-pg-sub   { font-size: .76rem; color: var(--text-muted); margin: 0; }
+.pr-pg-line  { width: 30px; height: 1px; background: var(--gold); }
+.pr-pg-brand {
+  font-size: .56rem; letter-spacing: .2em;
+  text-transform: uppercase; color: var(--text-muted); margin: 0;
+}
+
+/* ── Contenuto testo ─────────────────────────────────── */
+.pr-pg-prose {
+  font-size: .875rem; line-height: 1.8; color: var(--text);
+  word-break: break-word; overflow-wrap: break-word;
+  overflow: hidden;
+}
+.pr-pg-prose p      { margin: 0 0 .75rem; }
+.pr-pg-prose h1,.pr-pg-prose h2,.pr-pg-prose h3 {
+  font-family: var(--font-display,'Cormorant Garamond',serif);
+  font-weight: 400; color: var(--text); margin: 0 0 .5rem;
+}
+.pr-pg-prose strong { color: var(--text); }
+.pr-pg-prose em     { color: var(--text-muted); }
+.pr-pg-prose a      { color: var(--gold); }
+.pr-pg-prose ul,.pr-pg-prose ol { margin: 0 0 .75rem; padding-left: 1.4rem; }
+
+/* ── Numero pagina ───────────────────────────────────── */
+.pr-pg-foot {
+  display: flex; align-items: center; justify-content: center;
+  border-top: 1px solid color-mix(in srgb,var(--border) 35%,transparent);
+}
+.pr-pg-foot span { font-size: .58rem; letter-spacing: .12em; color: var(--text-muted); }
+
+/* ── Pagina speciale (fine/CTA) ──────────────────────── */
+.pr-pg-end {
+  width: 100%; height: 100%;
+  display: flex; flex-direction: column;
+  align-items: center; justify-content: center;
+  gap: .85rem; text-align: center; padding: 2rem;
+  box-sizing: border-box;
+  background: linear-gradient(135deg,
+    color-mix(in srgb,var(--gold) 6%,var(--bg)) 0%, var(--bg) 100%);
+}
+.pr-cta-lock svg { width: 2rem; height: 2rem; color: var(--gold); opacity: .75; }
+.pr-cta-msg  { font-size: .82rem; color: var(--text-muted); line-height: 1.65; margin: 0 .5rem; }
+.pr-cta-btn  {
+  display: inline-block; padding: .55rem 1.4rem; border-radius: 9999px;
+  background: var(--gold); color: #0F0D0A; font-size: .68rem; font-weight: 700;
+  text-transform: uppercase; letter-spacing: .12em; text-decoration: none;
+  transition: opacity .2s;
+}
+.pr-cta-btn:hover { opacity: .85; }
+
+/* ── Dots ────────────────────────────────────────────── */
+.pr-dots { display: flex; justify-content: center; gap: .1rem; flex-wrap: wrap; }
+.pr-dot  {
+  /* area cliccabile grande, pallino visivo piccolo al centro */
+  width: 28px; height: 28px; border-radius: 50%;
+  border: none; background: transparent; cursor: pointer;
+  display: flex; align-items: center; justify-content: center;
+  transition: transform .15s;
+}
+.pr-dot:hover  { transform: scale(1.15); }
+.pr-dot::after {
+  content: '';
+  width: 7px; height: 7px; border-radius: 50%;
+  background: color-mix(in srgb,var(--gold) 30%,var(--border));
+  transition: background .2s, transform .2s;
+}
+.pr-dot.pr-active::after {
+  background: var(--gold);
+  transform: scale(1.4);
+}
+
+/* ── Hint ────────────────────────────────────────────── */
+.pr-hint { text-align: center; font-size: .62rem; color: var(--text-muted); opacity: .55; margin: 0; }
+</style>
+
+<script is:inline>
+(function () {
+'use strict';
+
+/* ── Misura e divide il contenuto HTML in pagine ──────────────────────
+   Crea un div nascosto identico all'area prosa reale (stesse dimensioni
+   in px, stessa font, stesse regole CSS per margini paragrafi).
+   Usa scrollHeight > clientHeight per rilevare overflow in modo nativo. */
+function splitPages(html, proseW, proseH, pMarginPx) {
+  var SAFETY = 36;                    // margine sicurezza vs. differenze render
+  var measureH = proseH - SAFETY;
+
+  var mid = 'pr-m-' + Math.random().toString(36).slice(2, 7);
+  var st  = document.createElement('style');
+  st.textContent =
+    '#' + mid + ' p,#' + mid + ' h1,#' + mid + ' h2,#' + mid + ' h3,'
+    + '#' + mid + ' ul,#' + mid + ' ol,#' + mid + ' blockquote'
+    + '{margin-bottom:' + pMarginPx + 'px;margin-top:0;}';
+  document.head.appendChild(st);
+
+  var m = document.createElement('div');
+  m.id = mid;
+  m.style.cssText =
+    'position:fixed;top:-9999px;left:-9999px;opacity:0;pointer-events:none;'
+    + 'width:' + proseW + 'px;height:' + measureH + 'px;overflow:hidden;'
+    + 'font-size:0.875rem;line-height:1.8;box-sizing:border-box;word-break:break-word;'
+    + 'font-family:' + getComputedStyle(document.body).fontFamily + ';';
+  document.body.appendChild(m);
+
+  var tmp = document.createElement('div');
+  tmp.innerHTML = html;
+  var nodes = Array.from(tmp.children);
+  if (!nodes.length) {
+    var p = document.createElement('p');
+    p.textContent = tmp.textContent;
+    nodes = [p];
+  }
+
+  var pages = [], cur = '';
+  m.innerHTML = '';
+  for (var i = 0; i < nodes.length; i++) {
+    m.innerHTML = cur + nodes[i].outerHTML;
+    if (m.scrollHeight > m.clientHeight && cur) {
+      pages.push(cur);
+      cur = nodes[i].outerHTML;
+      m.innerHTML = cur;
+    } else {
+      cur += nodes[i].outerHTML;
+    }
+  }
+  if (cur.trim()) pages.push(cur);
+
+  document.body.removeChild(m);
+  st.remove();
+  return pages.length ? pages : [html];
+}
+
+/* ── Inizializza il reader ────────────────────────────────────────────── */
+function initReader(wrap) {
+  var uid     = wrap.dataset.uid;
+  var title   = wrap.dataset.title   || '';
+  var sub     = wrap.dataset.subtitle || '';
+  var backCover = null;
+  try { if (wrap.dataset.back !== 'null') backCover = JSON.parse(wrap.dataset.back); } catch(e){}
+
+  var vp      = document.getElementById('pr-vp-'      + uid);
+  var track   = document.getElementById('pr-track-'   + uid);
+  var loading = document.getElementById('pr-loading-' + uid);
+  var prevBtn = document.getElementById('pr-prev-'    + uid);
+  var nextBtn = document.getElementById('pr-next-'    + uid);
+  var counter = document.getElementById('pr-count-'   + uid);
+  var dotsEl  = document.getElementById('pr-dots-'    + uid);
+  if (!track || !vp) return;
+
+  /* Dimensioni: full-screen su mobile, compatto su desktop.
+     Usa sempre parentElement.offsetWidth come larghezza massima disponibile
+     così il reader rispetta padding e griglie di qualsiasi pagina contenitore. */
+  var vw       = window.innerWidth;
+  var vh       = window.innerHeight;
+  var isMobile = vw < 768;
+  var parentW  = (wrap.parentElement && wrap.parentElement.offsetWidth > 0)
+                   ? wrap.parentElement.offsetWidth
+                   : vw;
+  var maxW, pageH;
+  if (isMobile) {
+    maxW  = parentW;                                 // larghezza del contenitore padre
+    pageH = Math.max(400, Math.round(vh * 0.82));    // ~82% altezza viewport
+  } else {
+    maxW  = Math.min(parentW, 640);                  // max 640px su desktop
+    pageH = Math.min(Math.round(maxW * 1.32), 520);  // proporzione fissa su desktop
+  }
+
+  var rem      = parseFloat(getComputedStyle(document.documentElement).fontSize) || 16;
+  var padTop   = Math.round(2    * rem);
+  var padBot   = Math.round(2    * rem);
+  var padSide  = Math.round(1.75 * rem);
+  var footH    = Math.round(1.4  * rem);
+  var pMargin  = Math.round(0.75 * rem);
+  var proseW   = maxW - padSide * 2;
+  var proseH   = pageH - padTop - padBot - footH;
+
+  /* Centra il reader: limita il wrap al maxW e usa margin auto */
+  wrap.style.maxWidth    = maxW + 'px';
+  wrap.style.marginLeft  = 'auto';
+  wrap.style.marginRight = 'auto';
+
+  /* Imposta dimensioni viewport */
+  vp.style.width  = maxW + 'px';
+  vp.style.height = pageH + 'px';
+
+  /* Aggiorna loading page */
+  if (loading) {
+    loading.style.cssText += 'width:' + maxW + 'px;height:' + pageH + 'px;';
+  }
+
+  /* Leggi HTML */
+  var srcEl = document.getElementById('bv-src-' + uid);
+  var html  = srcEl ? srcEl.innerHTML : '';
+
+  /* Dividi in pagine */
+  var contentPages = splitPages(html, proseW, proseH, pMargin);
+
+  /* Helper: crea una pagina e la aggiunge al track */
+  function addPage(innerHtml, cls) {
+    var div = document.createElement('div');
+    div.className = 'pr-page' + (cls ? ' ' + cls : '');
+    div.style.cssText = 'width:' + maxW + 'px;height:' + pageH + 'px;';
+    div.innerHTML = innerHtml;
+    track.appendChild(div);
+  }
+
+  /* Copertina */
+  addPage(
+    '<div class="pr-pg-cover">'
+    + '<div class="pr-pg-orn">✦</div>'
+    + '<h2 class="pr-pg-title">' + title + '</h2>'
+    + (sub ? '<p class="pr-pg-sub">' + sub + '</p>' : '')
+    + '<div class="pr-pg-line"></div>'
+    + '<p class="pr-pg-brand">Personal Statement Studio</p>'
+    + '</div>'
+  );
+
+  /* Pagine di contenuto */
+  for (var i = 0; i < contentPages.length; i++) {
+    var footTop = padTop + proseH;
+    addPage(
+      '<div style="position:absolute;top:' + padTop + 'px;left:' + padSide + 'px;'
+      + 'width:' + proseW + 'px;height:' + proseH + 'px;overflow:hidden;" class="pr-pg-prose">'
+      + contentPages[i]
+      + '</div>'
+      + '<div style="position:absolute;top:' + footTop + 'px;left:' + padSide + 'px;'
+      + 'width:' + proseW + 'px;height:' + footH + 'px;" class="pr-pg-foot">'
+      + '<span>' + (i + 1) + '</span></div>'
+    );
+  }
+
+  /* Ultima pagina: CTA o ornamento */
+  if (backCover) {
+    addPage(
+      '<div class="pr-pg-end">'
+      + '<div class="pr-cta-lock"><svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="1.5"><path stroke-linecap="round" stroke-linejoin="round" d="M12 15v2m-6 4h12a2 2 0 002-2v-6a2 2 0 00-2-2H6a2 2 0 00-2 2v6a2 2 0 002 2zm10-10V7a4 4 0 00-8 0v4h8z"/></svg></div>'
+      + '<p class="pr-cta-msg">' + backCover.message + '</p>'
+      + '<a href="' + backCover.ctaHref + '" class="pr-cta-btn">' + backCover.ctaLabel + '</a>'
+      + '</div>'
+    );
+  } else {
+    addPage(
+      '<div class="pr-pg-end">'
+      + '<div class="pr-pg-orn">✦</div>'
+      + '<p class="pr-pg-brand" style="font-size:.75rem;font-style:italic;">Fine</p>'
+      + '<p class="pr-pg-brand">personalstatementstudio.com</p>'
+      + '</div>'
+    );
+  }
+
+  /* Navigazione */
+  var total   = track.children.length;
+  var current = 0;
+
+  /* Dots */
+  for (var d = 0; d < total; d++) {
+    (function(idx) {
+      var dot = document.createElement('button');
+      dot.className = 'pr-dot' + (idx === 0 ? ' pr-active' : '');
+      dot.setAttribute('aria-label', 'Pagina ' + (idx + 1));
+      dot.addEventListener('click', function() { goTo(idx); });
+      dotsEl.appendChild(dot);
+    })(d);
+  }
+
+  function goTo(idx) {
+    // Navigazione circolare: dall'ultima pagina → prima, dalla prima → ultima
+    idx = ((idx % total) + total) % total;
+    current = idx;
+    track.style.transform = 'translateX(-' + (idx * maxW) + 'px)';
+    counter.textContent = (idx + 1) + ' / ' + total;
+    // Le frecce sono sempre attive
+    prevBtn.disabled = false;
+    nextBtn.disabled = false;
+    var dots = dotsEl.querySelectorAll('.pr-dot');
+    for (var i = 0; i < dots.length; i++) {
+      dots[i].classList.toggle('pr-active', i === idx);
+    }
+  }
+
+  prevBtn.addEventListener('click', function() { goTo(current - 1); });
+  nextBtn.addEventListener('click', function() { goTo(current + 1); });
+
+  /* Swipe mobile */
+  var tx = 0, ty = 0, isH = false;
+  vp.addEventListener('touchstart', function(e) {
+    tx = e.touches[0].clientX; ty = e.touches[0].clientY; isH = false;
+  }, { passive: true });
+  vp.addEventListener('touchmove', function(e) {
+    var dx = Math.abs(e.touches[0].clientX - tx);
+    var dy = Math.abs(e.touches[0].clientY - ty);
+    if (dx > dy && dx > 8) { isH = true; e.preventDefault(); }
+  }, { passive: false });
+  vp.addEventListener('touchend', function(e) {
+    if (!isH) return;
+    var dx = e.changedTouches[0].clientX - tx;
+    if (Math.abs(dx) > 40) dx < 0 ? goTo(current + 1) : goTo(current - 1);
+    isH = false;
+  }, { passive: true });
+
+  /* Tastiera (quando il componente è in focus) */
+  wrap.setAttribute('tabindex', '0');
+  wrap.addEventListener('keydown', function(e) {
+    if (e.key === 'ArrowLeft')  goTo(current - 1);
+    if (e.key === 'ArrowRight') goTo(current + 1);
+  });
+
+  /* Mostra le pagine, nascondi il loader */
+  goTo(0);
+  if (loading) loading.style.display = 'none';
+  track.style.display = '';
+}
+
+/* ── Bootstrap ──────────────────────────────────────────────────── */
+function run() {
+  document.querySelectorAll('.pr-wrap[data-uid]:not([data-pr-done])').forEach(function(wrap) {
+    wrap.setAttribute('data-pr-done', '1');
+    try { initReader(wrap); } catch(err) {
+      console.error('[PageReader]', err);
+      var vp = wrap.querySelector('.pr-viewport');
+      if (vp) vp.innerHTML = '<div style="padding:2rem;color:#c0392b;font-size:.8rem">⚠ ' + err.message + '</div>';
+    }
+  });
+}
+
+if (document.readyState === 'loading') document.addEventListener('DOMContentLoaded', run);
+else run();
+
+})();
+</script>

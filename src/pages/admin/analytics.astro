@@ -1,0 +1,517 @@
+---
+import AdminLayout from '../../layouts/AdminLayout.astro';
+import { createSupabaseAdminClient } from '../../lib/supabase/server';
+
+const supabase = createSupabaseAdminClient();
+
+// ── Filtri temporali da URL ────────────────────────────────
+const urlParams = Astro.url.searchParams;
+const preset    = urlParams.get('preset') ?? 'all';
+const fromParam = urlParams.get('from') ?? '';
+const toParam   = urlParams.get('to')   ?? '';
+
+function getRange(preset: string, from: string, to: string) {
+  const now = new Date();
+  const eod = (d: Date) => { const x = new Date(d); x.setHours(23,59,59,999); return x; };
+  const bod = (d: Date) => { const x = new Date(d); x.setHours(0,0,0,0);      return x; };
+  switch (preset) {
+    case 'today': {
+      return { from: bod(now).toISOString(), to: eod(now).toISOString() };
+    }
+    case 'yesterday': {
+      const y = new Date(now); y.setDate(y.getDate() - 1);
+      return { from: bod(y).toISOString(), to: eod(y).toISOString() };
+    }
+    case '7d': {
+      const s = new Date(now); s.setDate(s.getDate() - 6);
+      return { from: bod(s).toISOString(), to: eod(now).toISOString() };
+    }
+    case '30d': {
+      const s = new Date(now); s.setDate(s.getDate() - 29);
+      return { from: bod(s).toISOString(), to: eod(now).toISOString() };
+    }
+    case 'custom': {
+      return {
+        from: from ? new Date(from + 'T00:00:00').toISOString() : null,
+        to:   to   ? new Date(to   + 'T23:59:59').toISOString() : null,
+      };
+    }
+    default: return { from: null, to: null };
+  }
+}
+
+const { from: dateFrom, to: dateTo } = getRange(preset, fromParam, toParam);
+const hasFilter = !!(dateFrom || dateTo);
+
+function applyDate(q: any) {
+  if (dateFrom) q = q.gte('created_at', dateFrom);
+  if (dateTo)   q = q.lte('created_at', dateTo);
+  return q;
+}
+
+// ── Query parallele ───────────────────────────────────────
+function applyDateOnField(q: any, field: string) {
+  if (dateFrom) q = q.gte(field, dateFrom);
+  if (dateTo)   q = q.lte(field, dateTo);
+  return q;
+}
+
+const [
+  { data: acquistiRaw },
+  { data: downloadRaw },
+  { data: utenti },
+  { count: nuoviUtentiCount },
+] = await Promise.all([
+  applyDate(supabase.from('admin_acquisti')
+    .select('id, created_at, prodotto_nome, prodotto_prezzo')),
+  applyDate(supabase.from('admin_download_log')
+    .select('id, created_at')),
+  supabase
+    .from('admin_utenti_completo')
+    .select('*')
+    .order('registrato_il', { ascending: false }),
+  // Utenti registrati nel periodo selezionato (usa registrato_il)
+  applyDateOnField(
+    supabase.from('admin_utenti_completo').select('*', { count: 'exact', head: true }),
+    'registrato_il'
+  ),
+]);
+
+// ── KPI ──────────────────────────────────────────────────
+const totAcquisti        = acquistiRaw?.length ?? 0;
+const totDownload        = downloadRaw?.length ?? 0;
+const revenueTot         = acquistiRaw?.reduce((s, a: any) => s + Number(a.prodotto_prezzo ?? 0), 0) ?? 0;
+const totUtentiSempre    = utenti?.length ?? 0;
+const nuoviUtenti        = nuoviUtentiCount ?? 0;          // registrati nel periodo
+const utentiConAcquisto  = new Set(acquistiRaw?.map((a: any) => a.utente_email)).size;
+// Tasso conversione: acquirenti unici nel periodo / totale utenti
+const tassoConversione   = totUtentiSempre > 0 ? Math.round((utentiConAcquisto / totUtentiSempre) * 100) : 0;
+
+// ── Vendite per prodotto (nel periodo) ────────────────────
+const prodMap: Record<string, { nome: string; prezzo: number; vendite: number; revenue: number }> = {};
+acquistiRaw?.forEach((a: any) => {
+  const k = a.prodotto_nome ?? '—';
+  if (!prodMap[k]) prodMap[k] = { nome: k, prezzo: Number(a.prodotto_prezzo ?? 0), vendite: 0, revenue: 0 };
+  prodMap[k].vendite++;
+  prodMap[k].revenue += Number(a.prodotto_prezzo ?? 0);
+});
+const revenueProdotti = Object.values(prodMap).sort((a, b) => b.vendite - a.vendite);
+
+// ── Andamento (adattivo: giorni se <32 gg, mesi altrimenti) ──
+const showDays = preset === 'today' || preset === 'yesterday' || preset === '7d' ||
+  (preset === 'custom' && fromParam && toParam &&
+    (new Date(toParam).getTime() - new Date(fromParam).getTime()) / 86400000 <= 31);
+
+function buildTimeline() {
+  const map: Record<string, { acquisti: number; revenue: number }> = {};
+
+  if (showDays) {
+    // Genera gg dal range
+    const start = dateFrom ? new Date(dateFrom) : new Date();
+    const end   = dateTo   ? new Date(dateTo)   : new Date();
+    start.setHours(0,0,0,0);
+    for (let d = new Date(start); d <= end; d.setDate(d.getDate() + 1)) {
+      const k = d.toLocaleDateString('it-IT', { day: '2-digit', month: 'short' });
+      map[k] = { acquisti: 0, revenue: 0 };
+    }
+    acquistiRaw?.forEach((a: any) => {
+      const k = new Date(a.created_at).toLocaleDateString('it-IT', { day: '2-digit', month: 'short' });
+      if (map[k]) { map[k].acquisti++; map[k].revenue += Number(a.prodotto_prezzo ?? 0); }
+    });
+  } else {
+    // Ultimi 6 mesi (o mesi nel range custom)
+    const start = dateFrom ? new Date(dateFrom) : (() => { const d = new Date(); d.setMonth(d.getMonth()-5); return d; })();
+    const end   = dateTo   ? new Date(dateTo)   : new Date();
+    const cur   = new Date(start.getFullYear(), start.getMonth(), 1);
+    while (cur <= end) {
+      const k = cur.toLocaleDateString('it-IT', { month: 'long', year: 'numeric' });
+      map[k] = { acquisti: 0, revenue: 0 };
+      cur.setMonth(cur.getMonth() + 1);
+    }
+    acquistiRaw?.forEach((a: any) => {
+      const k = new Date(a.created_at).toLocaleDateString('it-IT', { month: 'long', year: 'numeric' });
+      if (map[k]) { map[k].acquisti++; map[k].revenue += Number(a.prodotto_prezzo ?? 0); }
+    });
+  }
+  return map;
+}
+const timeline = buildTimeline();
+
+// ── Utilità ───────────────────────────────────────────────
+function eur(n: number) {
+  return n.toLocaleString('it-IT', { style: 'currency', currency: 'EUR', minimumFractionDigits: 2 });
+}
+function dataBreve(iso: string) {
+  return new Date(iso).toLocaleDateString('it-IT', { day: '2-digit', month: 'short', year: 'numeric' });
+}
+
+// Label periodo attivo
+const presetLabels: Record<string, string> = {
+  all: 'Tutto il periodo', today: 'Oggi', yesterday: 'Ieri',
+  '7d': 'Ultimi 7 giorni', '30d': 'Ultimi 30 giorni', custom: 'Periodo personalizzato',
+};
+const periodoLabel = presetLabels[preset] ?? 'Tutto il periodo';
+---
+
+<AdminLayout title="Analytics" activeNav="analytics">
+
+  <!-- ── Barra filtri temporali ─────────────────────────── -->
+  <div class="mb-8 rounded-2xl border p-4" style="border-color: var(--border); background-color: var(--bg-card);">
+    <p class="mb-3 text-[10px] font-semibold uppercase tracking-widest" style="color: var(--text-muted);">Periodo</p>
+    <div class="flex flex-wrap items-center gap-2">
+      {(['all','today','yesterday','7d','30d'] as const).map(p => (
+        <a
+          href={`/admin/analytics?preset=${p}`}
+          class={`filter-pill ${preset === p ? 'filter-pill-active' : ''}`}
+        >
+          {presetLabels[p]}
+        </a>
+      ))}
+
+      <!-- Custom range trigger -->
+      <button
+        id="btn-custom"
+        class={`filter-pill ${preset === 'custom' ? 'filter-pill-active' : ''}`}
+        type="button"
+      >
+        Personalizzato
+      </button>
+    </div>
+
+    <!-- Form periodo personalizzato -->
+    <form
+      id="form-custom"
+      method="get"
+      action="/admin/analytics"
+      class="mt-3 flex flex-wrap items-end gap-3"
+      style={`display: ${preset === 'custom' ? 'flex' : 'none'} !important;`}
+    >
+      <input type="hidden" name="preset" value="custom" />
+      <div class="flex flex-col gap-1">
+        <label class="text-[10px] uppercase tracking-widest" style="color:var(--text-muted);" for="inp-from">Dal</label>
+        <input
+          id="inp-from" name="from" type="date"
+          value={fromParam}
+          class="rounded-xl border px-3 py-1.5 text-sm outline-none"
+          style="border-color:var(--border); background:var(--bg); color:var(--text);"
+          required
+        />
+      </div>
+      <div class="flex flex-col gap-1">
+        <label class="text-[10px] uppercase tracking-widest" style="color:var(--text-muted);" for="inp-to">Al</label>
+        <input
+          id="inp-to" name="to" type="date"
+          value={toParam}
+          class="rounded-xl border px-3 py-1.5 text-sm outline-none"
+          style="border-color:var(--border); background:var(--bg); color:var(--text);"
+          required
+        />
+      </div>
+      <button
+        type="submit"
+        class="rounded-full px-4 py-1.5 text-xs font-bold uppercase tracking-widest transition-opacity"
+        style="background:var(--gold); color:#0F0D0A;"
+      >
+        Applica
+      </button>
+    </form>
+
+    {hasFilter && (
+      <p class="mt-2 text-xs" style="color:var(--text-muted);">
+        Stai visualizzando: <strong style="color:var(--text);">{periodoLabel}</strong>
+        {preset === 'custom' && fromParam && toParam && (
+          <span> ({fromParam} → {toParam})</span>
+        )}
+        <a href="/admin/analytics" class="ml-3 underline" style="color:var(--gold);">Reset</a>
+      </p>
+    )}
+  </div>
+
+  <!-- ── KPI Cards ──────────────────────────────────────── -->
+  <div class="mb-10 grid gap-4 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-6">
+    {[
+      {
+        label: hasFilter ? 'Nuovi utenti' : 'Utenti registrati',
+        value: hasFilter ? nuoviUtenti : totUtentiSempre,
+        sub:   hasFilter ? `su ${totUtentiSempre} totali` : 'totale storico',
+        gold: false,
+      },
+      { label: 'Acquisti',            value: totAcquisti,            sub: `${utentiConAcquisto} utenti unici`,gold: false },
+      { label: 'Revenue',             value: eur(revenueTot),        sub: 'al lordo fee PayPal',             gold: true  },
+      { label: 'Download',            value: totDownload,            sub: 'PDF scaricati',                   gold: false },
+      { label: 'Tasso conversione',   value: `${tassoConversione}%`, sub: 'acquirenti / utenti totali',      gold: false },
+      { label: 'Prodotti venduti',    value: revenueProdotti.length, sub: 'tipologie distinte',              gold: false },
+    ].map(k => (
+      <div
+        class="rounded-2xl border p-5 flex flex-col gap-1"
+        style={`border-color: var(--border); background-color: ${k.gold ? 'color-mix(in srgb, var(--gold) 8%, var(--bg-card))' : 'var(--bg-card)'};`}
+      >
+        <p class="font-display text-3xl font-light" style={`color: ${k.gold ? 'var(--gold)' : 'var(--text)'};`}>{k.value}</p>
+        <p class="text-xs font-semibold uppercase tracking-widest" style="color: var(--text-muted);">{k.label}</p>
+        <p class="text-[10px]" style="color: var(--text-muted);">{k.sub}</p>
+      </div>
+    ))}
+  </div>
+
+  <!-- ── Vendite per prodotto ───────────────────────────── -->
+  <section class="mb-10">
+    <h2 class="mb-4 font-display text-xl font-light" style="color: var(--text);">
+      Vendite per prodotto
+      <span class="ml-2 text-xs font-sans font-normal" style="color:var(--text-muted);">— {periodoLabel}</span>
+    </h2>
+    <div class="overflow-x-auto rounded-2xl border" style="border-color: var(--border);">
+      <table class="w-full text-sm">
+        <thead>
+          <tr style="border-bottom:1px solid var(--border); background-color: color-mix(in srgb, var(--surface) 60%, transparent);">
+            <th class="an-th text-left">Prodotto</th>
+            <th class="an-th text-right">Prezzo unit.</th>
+            <th class="an-th text-right">Vendite</th>
+            <th class="an-th text-right">Revenue</th>
+          </tr>
+        </thead>
+        <tbody>
+          {revenueProdotti.length > 0 ? revenueProdotti.map(p => (
+            <tr style="border-bottom:1px solid var(--border);">
+              <td class="an-td font-medium" style="color:var(--text);">{p.nome}</td>
+              <td class="an-td text-right" style="color:var(--text-muted);">{eur(p.prezzo)}</td>
+              <td class="an-td text-right">
+                <span class="inline-flex items-center justify-center rounded-full px-2 py-0.5 text-xs font-semibold"
+                  style="background-color: color-mix(in srgb, var(--gold) 15%, transparent); color: var(--gold);">
+                  {p.vendite}
+                </span>
+              </td>
+              <td class="an-td text-right font-semibold" style="color:var(--gold);">{eur(p.revenue)}</td>
+            </tr>
+          )) : (
+            <tr><td colspan="4" class="px-5 py-4 text-sm" style="color:var(--text-muted);">Nessun acquisto in questo periodo.</td></tr>
+          )}
+        </tbody>
+        {revenueProdotti.length > 0 && (
+          <tfoot>
+            <tr style="background-color: color-mix(in srgb, var(--surface) 40%, transparent);">
+              <td class="an-td font-semibold" style="color:var(--text);">Totale</td>
+              <td class="an-td"></td>
+              <td class="an-td text-right font-semibold" style="color:var(--text);">{totAcquisti}</td>
+              <td class="an-td text-right font-semibold" style="color:var(--gold);">{eur(revenueTot)}</td>
+            </tr>
+          </tfoot>
+        )}
+      </table>
+    </div>
+  </section>
+
+  <!-- ── Andamento temporale ───────────────────────────── -->
+  <section class="mb-10">
+    <h2 class="mb-4 font-display text-xl font-light" style="color: var(--text);">
+      {showDays ? 'Andamento giornaliero' : 'Andamento mensile'}
+      <span class="ml-2 text-xs font-sans font-normal" style="color:var(--text-muted);">— {periodoLabel}</span>
+    </h2>
+    <div class="overflow-x-auto rounded-2xl border" style="border-color: var(--border);">
+      <table class="w-full text-sm">
+        <thead>
+          <tr style="border-bottom:1px solid var(--border); background-color: color-mix(in srgb, var(--surface) 60%, transparent);">
+            <th class="an-th text-left">{showDays ? 'Giorno' : 'Mese'}</th>
+            <th class="an-th text-right">Acquisti</th>
+            <th class="an-th text-right">Revenue</th>
+          </tr>
+        </thead>
+        <tbody>
+          {Object.entries(timeline).map(([periodo, dati]) => (
+            <tr style="border-bottom:1px solid var(--border);">
+              <td class="an-td capitalize" style="color:var(--text);">{periodo}</td>
+              <td class="an-td text-right" style={`color: ${dati.acquisti > 0 ? 'var(--text)' : 'var(--text-muted)'};`}>
+                {dati.acquisti > 0
+                  ? <span class="inline-flex items-center justify-center rounded-full px-2 py-0.5 text-xs font-semibold"
+                      style="background-color:color-mix(in srgb,var(--gold) 15%,transparent);color:var(--gold);">{dati.acquisti}</span>
+                  : '—'
+                }
+              </td>
+              <td class="an-td text-right font-semibold" style={`color:${dati.revenue > 0 ? 'var(--gold)' : 'var(--text-muted)'};`}>
+                {dati.revenue > 0 ? eur(dati.revenue) : '—'}
+              </td>
+            </tr>
+          ))}
+        </tbody>
+      </table>
+    </div>
+  </section>
+
+  <!-- ── Lista utenti + contatti ────────────────────────── -->
+  <section>
+    <div class="mb-4 flex flex-wrap items-center justify-between gap-3">
+      <h2 class="font-display text-xl font-light" style="color: var(--text);">
+        Lista utenti ({totUtentiSempre})
+        <span class="ml-2 text-xs font-sans font-normal" style="color:var(--text-muted);">— sempre totale</span>
+      </h2>
+      <div class="flex gap-2">
+        <button id="btn-copy-email" class="an-btn-outline">Copia email</button>
+        <button id="btn-export-csv" class="an-btn-gold">Esporta CSV</button>
+      </div>
+    </div>
+
+    <div class="mb-3">
+      <input
+        id="search-utenti" type="search"
+        placeholder="Cerca per nome, email, telefono…"
+        class="w-full rounded-xl border px-4 py-2 text-sm outline-none transition-colors"
+        style="border-color:var(--border); background-color:var(--bg-card); color:var(--text);"
+        onfocus="this.style.borderColor='var(--gold)'"
+        onblur="this.style.borderColor='var(--border)'"
+      />
+    </div>
+
+    <div class="overflow-x-auto rounded-2xl border" style="border-color: var(--border);">
+      <table class="w-full text-sm" id="tabella-utenti">
+        <thead>
+          <tr style="border-bottom:1px solid var(--border); background-color: color-mix(in srgb, var(--surface) 60%, transparent);">
+            <th class="an-th text-left">Nome</th>
+            <th class="an-th text-left">Email</th>
+            <th class="an-th text-left">Telefono</th>
+            <th class="an-th text-left">Lingua</th>
+            <th class="an-th text-left">Ruolo</th>
+            <th class="an-th text-right">Acquisti tot.</th>
+            <th class="an-th text-right">Speso tot.</th>
+            <th class="an-th text-left">Registrato</th>
+          </tr>
+        </thead>
+        <tbody id="tbody-utenti">
+          {(utenti ?? []).map((u: any) => (
+            <tr class="utente-row" style="border-bottom:1px solid var(--border);">
+              <td class="an-td" style="color:var(--text);">{u.nome ?? '—'}</td>
+              <td class="an-td font-mono text-xs" style="color:var(--text);">{u.email}</td>
+              <td class="an-td font-mono text-xs" style="color:var(--text);">{u.telefono ?? '—'}</td>
+              <td class="an-td uppercase text-xs" style="color:var(--text-muted);">{u.lingua}</td>
+              <td class="an-td">
+                <span class="rounded-full px-2 py-0.5 text-[10px] font-semibold uppercase"
+                  style={`background-color:color-mix(in srgb,${u.ruolo==='admin'?'var(--gold)':'var(--border)'} 20%,transparent);color:${u.ruolo==='admin'?'var(--gold)':'var(--text-muted)'};`}>
+                  {u.ruolo}
+                </span>
+              </td>
+              <td class="an-td text-right" style="color:var(--text);">{u.num_acquisti}</td>
+              <td class="an-td text-right font-semibold" style={`color:${u.totale_speso>0?'var(--gold)':'var(--text-muted)'};`}>
+                {eur(Number(u.totale_speso))}
+              </td>
+              <td class="an-td text-xs" style="color:var(--text-muted);">{dataBreve(u.registrato_il)}</td>
+            </tr>
+          ))}
+        </tbody>
+      </table>
+      {(!utenti || utenti.length === 0) && (
+        <p class="px-5 py-6 text-sm" style="color:var(--text-muted);">Nessun utente ancora registrato.</p>
+      )}
+    </div>
+
+    <p class="mt-2 text-xs" style="color:var(--text-muted);">
+      {(utenti ?? []).filter((u: any) => u.telefono).length} utenti con telefono ·
+      {(utenti ?? []).filter((u: any) => u.num_acquisti > 0).length} utenti acquirenti ·
+      {hasFilter && <span>registrati nel periodo: <strong style="color:var(--text);">{nuoviUtenti}</strong></span>}
+    </p>
+  </section>
+
+</AdminLayout>
+
+<style is:global>
+.an-th {
+  padding: .65rem 1.1rem;
+  font-size: .65rem;
+  font-weight: 600;
+  text-transform: uppercase;
+  letter-spacing: .12em;
+  color: var(--text-muted);
+  white-space: nowrap;
+}
+.an-td { padding: .65rem 1.1rem; white-space: nowrap; }
+
+.filter-pill {
+  padding: .35rem .9rem;
+  border-radius: 9999px;
+  border: 1px solid var(--border);
+  font-size: .68rem;
+  font-weight: 600;
+  text-transform: uppercase;
+  letter-spacing: .1em;
+  color: var(--text-muted);
+  background: transparent;
+  cursor: pointer;
+  text-decoration: none;
+  transition: border-color .15s, color .15s;
+  display: inline-flex;
+  align-items: center;
+}
+.filter-pill:hover { border-color: var(--gold); color: var(--gold); }
+.filter-pill-active { border-color: var(--gold) !important; color: var(--gold) !important; background-color: color-mix(in srgb, var(--gold) 10%, transparent); }
+
+.an-btn-outline {
+  border: 1px solid var(--border); border-radius: 9999px;
+  padding: .4rem 1rem; font-size: .68rem; font-weight: 600;
+  text-transform: uppercase; letter-spacing: .1em;
+  color: var(--text-muted); background: transparent; cursor: pointer;
+  transition: border-color .2s, color .2s;
+}
+.an-btn-outline:hover { border-color: var(--gold); color: var(--gold); }
+.an-btn-gold {
+  border-radius: 9999px; padding: .4rem 1.1rem;
+  font-size: .68rem; font-weight: 700; text-transform: uppercase;
+  letter-spacing: .1em; color: #0F0D0A; background: var(--gold);
+  border: none; cursor: pointer; transition: opacity .2s;
+}
+.an-btn-gold:hover { opacity: .85; }
+</style>
+
+<script is:inline>
+// ── Toggle form periodo personalizzato ────────────────────
+document.getElementById('btn-custom')?.addEventListener('click', function() {
+  var f = document.getElementById('form-custom');
+  if (f) f.style.display = f.style.display === 'none' ? 'flex' : 'none';
+});
+
+// ── Ricerca utenti ────────────────────────────────────────
+document.getElementById('search-utenti')?.addEventListener('input', function(e) {
+  var q = e.target.value.toLowerCase();
+  document.querySelectorAll('#tbody-utenti .utente-row').forEach(function(row) {
+    row.style.display = (row.textContent || '').toLowerCase().includes(q) ? '' : 'none';
+  });
+});
+
+// ── Leggi righe tabella in oggetti JS ─────────────────────
+var utentiJS = Array.from(document.querySelectorAll('#tbody-utenti .utente-row')).map(function(r) {
+  var c = r.querySelectorAll('td');
+  return {
+    nome:     c[0]?.textContent?.trim() ?? '',
+    email:    c[1]?.textContent?.trim() ?? '',
+    telefono: c[2]?.textContent?.trim() ?? '',
+    lingua:   c[3]?.textContent?.trim() ?? '',
+    ruolo:    c[4]?.textContent?.trim() ?? '',
+    acquisti: c[5]?.textContent?.trim() ?? '0',
+    speso:    c[6]?.textContent?.trim() ?? '',
+    data:     c[7]?.textContent?.trim() ?? '',
+  };
+});
+
+// ── Copia email ───────────────────────────────────────────
+document.getElementById('btn-copy-email')?.addEventListener('click', function() {
+  var csv = 'Email\n' + utentiJS.filter(function(u) { return u.email; }).map(function(u) { return u.email; }).join('\n');
+  navigator.clipboard.writeText(csv).then(function() {
+    var btn = document.getElementById('btn-copy-email');
+    btn.textContent = '✓ Copiato!';
+    setTimeout(function() { btn.textContent = 'Copia email'; }, 2500);
+  });
+});
+
+// ── Export CSV completo (con BOM per Excel) ───────────────
+document.getElementById('btn-export-csv')?.addEventListener('click', function() {
+  var header = 'Nome,Email,Telefono,Lingua,Ruolo,Acquisti totali,Totale speso,Registrato';
+  var rows = utentiJS.map(function(u) {
+    return [u.nome, u.email, u.telefono, u.lingua, u.ruolo, u.acquisti, u.speso, u.data]
+      .map(function(v) { return '"' + (v ?? '').replace(/"/g, '""') + '"'; }).join(',');
+  });
+  var csv  = [header].concat(rows).join('\n');
+  var blob = new Blob(['\uFEFF' + csv], { type: 'text/csv;charset=utf-8;' });
+  var url  = URL.createObjectURL(blob);
+  var a    = document.createElement('a');
+  a.href   = url;
+  a.download = 'utenti-' + new Date().toISOString().split('T')[0] + '.csv';
+  a.click();
+  URL.revokeObjectURL(url);
+});
+</script>

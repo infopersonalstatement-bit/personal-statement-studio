@@ -1,0 +1,105 @@
+---
+import BaseLayout from '../../layouts/BaseLayout.astro';
+import PageHero from '../../components/common/PageHero.astro';
+
+const { data: categorie } = await Astro.locals.supabase
+  .from('categorie').select('nome, slug').in('tipo', ['shop','both']).order('nome');
+
+const { data: prodotti } = await Astro.locals.supabase
+  .from('prodotti')
+  .select('id, nome, prezzo, prezzo_originale, descrizione, slug, categorie(nome, slug)')
+  .order('created_at', { ascending: false });
+---
+
+<BaseLayout title="Shop" description="Risorse digitali per il tuo percorso di crescita.">
+  <PageHero eyebrow="Prodotti Digitali" subtitle="Non contenuti generici. Sistemi strutturati.">
+    Non aggiungiamo rumore.<br />
+    <em class="not-italic font-semibold" style="color: var(--gold);">Portiamo direzione.</em>
+  </PageHero>
+
+  <!-- Filtro categorie -->
+  {categorie && categorie.length > 0 && (
+    <div class="mx-auto max-w-6xl px-6 pb-2">
+      <div class="flex flex-wrap gap-2">
+        <a href="/shop" class="tax-pill tax-pill-active">Tutti</a>
+        {categorie.map((c: any) => (
+          <a href={`/shop/categoria/${c.slug}`} class="tax-pill">{c.nome}</a>
+        ))}
+      </div>
+    </div>
+  )}
+
+  <section class="mx-auto max-w-6xl px-6 py-10">
+    {prodotti && prodotti.length > 0 ? (
+      <div class="grid gap-6 sm:grid-cols-2 lg:grid-cols-3">
+        {prodotti.map((p: any) => (
+          <a
+            href={`/shop/${p.slug ?? p.id}`}
+            class="group flex flex-col rounded-2xl border p-7 transition-all duration-300"
+            style="border-color: var(--border); background-color: var(--bg-card);"
+            onmouseover="this.style.borderColor='var(--gold)'; this.style.transform='translateY(-2px)'"
+            onmouseout="this.style.borderColor='var(--border)'; this.style.transform='translateY(0)'"
+          >
+            <p class="mb-2 text-[10px] font-semibold uppercase tracking-[0.3em]" style="color: var(--gold);">
+              {p.categorie ? p.categorie.nome : 'PDF Digitale'}
+            </p>
+            <h2 class="font-display mb-3 text-xl font-light leading-snug" style="color: var(--text);">
+              {p.nome}
+            </h2>
+            {p.descrizione && (
+              <p class="mb-5 flex-1 text-sm leading-relaxed line-clamp-3" style="color: var(--text-muted);">
+                {p.descrizione}
+              </p>
+            )}
+            <div class="flex items-center justify-between gap-2">
+              <div class="flex flex-wrap items-baseline gap-2">
+                <p class="font-display text-2xl font-light" style="color: var(--gold);">
+                  €{Number(p.prezzo).toFixed(2)}
+                </p>
+                {p.prezzo_originale && p.prezzo_originale > p.prezzo && (
+                  <>
+                    <span class="font-display text-base line-through" style="color: var(--text-muted);">
+                      €{Number(p.prezzo_originale).toFixed(2)}
+                    </span>
+                    <span class="rounded-full px-2 py-0.5 text-[10px] font-bold uppercase"
+                      style="background-color: color-mix(in srgb, var(--gold) 15%, transparent); color: var(--gold);">
+                      -{Math.round((1 - p.prezzo / p.prezzo_originale) * 100)}%
+                    </span>
+                  </>
+                )}
+              </div>
+              <span
+                class="flex-shrink-0 rounded-full border px-3 py-1 text-xs font-semibold uppercase tracking-widest transition-all duration-200"
+                style="border-color: var(--border); color: var(--text-muted);"
+              >
+                Scopri →
+              </span>
+            </div>
+          </a>
+        ))}
+      </div>
+    ) : (
+      <div class="py-24 text-center">
+        <p class="font-display text-2xl font-light mb-3" style="color: var(--text);">
+          Stiamo preparando qualcosa di speciale.
+        </p>
+        <p class="text-sm" style="color: var(--text-muted);">
+          I prodotti saranno disponibili a breve.
+        </p>
+      </div>
+    )}
+  </section>
+</BaseLayout>
+
+<style is:global>
+.tax-pill {
+  padding: .3rem .85rem; border-radius: 9999px;
+  border: 1px solid var(--border); font-size: .7rem;
+  font-weight: 600; text-transform: uppercase; letter-spacing: .1em;
+  color: var(--text-muted); background: transparent;
+  text-decoration: none; transition: border-color .15s, color .15s;
+}
+.tax-pill:hover { border-color: var(--gold); color: var(--gold); }
+.tax-pill-active { border-color: var(--gold) !important; color: var(--gold) !important;
+  background-color: color-mix(in srgb, var(--gold) 10%, transparent); }
+</style>

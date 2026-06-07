@@ -1,0 +1,58 @@
+---
+import BaseLayout from '../../../layouts/BaseLayout.astro';
+import PageHero from '../../../components/common/PageHero.astro';
+
+const { slug } = Astro.params;
+
+const { data: tag } = await Astro.locals.supabase
+  .from('tag').select('id, nome, slug').eq('slug', slug).in('tipo', ['shop','both']).maybeSingle();
+
+if (!tag) return Astro.redirect('/shop');
+
+const { data: prodottiTag } = await Astro.locals.supabase
+  .from('prodotti_tag')
+  .select('prodotti(id, nome, prezzo, prezzo_originale, descrizione, slug)')
+  .eq('tag_id', tag.id);
+
+const prodotti = (prodottiTag ?? [])
+  .map((r: any) => r.prodotti)
+  .filter(Boolean)
+  .sort((a: any, b: any) => a.nome.localeCompare(b.nome));
+---
+
+<BaseLayout
+  title={`#${tag.nome} — Shop`}
+  description={`Prodotti sul tema "${tag.nome}".`}
+>
+  <PageHero eyebrow="Shop · Tag" subtitle={`Prodotti sul tema "${tag.nome}"`}>
+    #{tag.nome}
+  </PageHero>
+
+  <section class="mx-auto max-w-6xl px-6 py-10">
+    {prodotti.length > 0 ? (
+      <div class="grid gap-6 sm:grid-cols-2 lg:grid-cols-3">
+        {prodotti.map((p: any) => (
+          <a href={`/shop/${p.slug ?? p.id}`}
+            class="group flex flex-col rounded-2xl border p-7 transition-all duration-300"
+            style="border-color:var(--border); background-color:var(--bg-card);"
+            onmouseover="this.style.borderColor='var(--gold)'; this.style.transform='translateY(-2px)'"
+            onmouseout="this.style.borderColor='var(--border)'; this.style.transform='translateY(0)'">
+            <p class="mb-2 text-[10px] font-semibold uppercase tracking-[0.3em]" style="color:var(--gold);">#{tag.nome}</p>
+            <h2 class="font-display mb-3 text-xl font-light leading-snug" style="color:var(--text);">{p.nome}</h2>
+            {p.descrizione && <p class="mb-5 flex-1 text-sm leading-relaxed line-clamp-3" style="color:var(--text-muted);">{p.descrizione}</p>}
+            <div class="flex items-center justify-between gap-2">
+              <p class="font-display text-2xl font-light" style="color:var(--gold);">€{Number(p.prezzo).toFixed(2)}</p>
+              <span class="rounded-full border px-3 py-1 text-xs font-semibold uppercase tracking-widest"
+                style="border-color:var(--border); color:var(--text-muted);">Scopri →</span>
+            </div>
+          </a>
+        ))}
+      </div>
+    ) : (
+      <div class="py-20 text-center">
+        <p class="font-display text-2xl font-light mb-3" style="color:var(--text);">Nessun prodotto con questo tag.</p>
+        <a href="/shop" class="text-sm" style="color:var(--gold);">← Torna allo shop</a>
+      </div>
+    )}
+  </section>
+</BaseLayout>

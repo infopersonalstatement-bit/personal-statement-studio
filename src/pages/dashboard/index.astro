@@ -1,0 +1,68 @@
+---
+import DashboardLayout from '../../layouts/DashboardLayout.astro';
+
+const user = Astro.locals.user!;
+
+// Carica gli acquisti dell'utente con i dettagli del prodotto
+const { data: acquisti } = await Astro.locals.supabase
+  .from('acquisti')
+  .select('id, created_at, prodotti(id, nome, descrizione)')
+  .eq('utente_id', user.id)
+  .order('created_at', { ascending: false });
+---
+
+<DashboardLayout title="I miei acquisti" activeNav="acquisti">
+
+  {acquisti && acquisti.length > 0 ? (
+    <ul class="grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
+      {acquisti.map((a: any) => (
+        <li
+          class="flex flex-col rounded-2xl border p-6 transition-all duration-300"
+          style="border-color: var(--border); background-color: var(--bg-card);"
+          onmouseover="this.style.borderColor='var(--gold)'"
+          onmouseout="this.style.borderColor='var(--border)'"
+        >
+          <h2 class="mb-1 font-semibold" style="color: var(--text);">
+            {a.prodotti?.nome ?? 'Prodotto'}
+          </h2>
+          {a.prodotti?.descrizione && (
+            <p class="mb-4 flex-1 text-xs leading-relaxed line-clamp-2" style="color: var(--text-muted);">
+              {a.prodotti.descrizione}
+            </p>
+          )}
+          <time class="mb-4 text-xs" style="color: var(--text-muted);">
+            Acquistato il {new Date(a.created_at).toLocaleDateString('it-IT')}
+          </time>
+          <a
+            href={`/api/download/${a.prodotti?.id}`}
+            target="_blank"
+            rel="noopener noreferrer"
+            class="cta-main text-center"
+            style="font-size: 0.7rem; padding: 0.6rem 1rem;"
+          >
+            Scarica PDF
+          </a>
+        </li>
+      ))}
+    </ul>
+  ) : (
+    <!-- Stato vuoto — stile coerente con il resto del sito -->
+    <div class="flex flex-col items-center justify-center py-24 text-center">
+      <img
+        src="/logo-full.png"
+        alt=""
+        class="logo-full mb-8 w-32 opacity-40"
+      />
+      <h2 class="font-display mb-3 text-2xl font-light" style="color: var(--text);">
+        Nessun acquisto ancora
+      </h2>
+      <p class="mb-8 max-w-sm text-sm leading-relaxed" style="color: var(--text-muted);">
+        I prodotti che acquisti appariranno qui e potrai scaricarli in qualsiasi momento.
+      </p>
+      <a href="/shop" class="cta-main">
+        Esplora i prodotti →
+      </a>
+    </div>
+  )}
+
+</DashboardLayout>

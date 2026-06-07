@@ -1,0 +1,104 @@
+---
+import BaseLayout from '../../layouts/BaseLayout.astro';
+import PageHero from '../../components/common/PageHero.astro';
+
+const { data: categorie } = await Astro.locals.supabase
+  .from('categorie').select('nome, slug').in('tipo', ['blog','both']).order('nome');
+
+const { data: articoli } = await Astro.locals.supabase
+  .from('articoli')
+  .select('id, titolo, slug, estratto, created_at, categorie(nome, slug)')
+  .eq('pubblicato', true)
+  .order('created_at', { ascending: false });
+---
+
+<BaseLayout title="Blog" description="Riflessioni su identità, posizionamento e crescita personale.">
+
+  <PageHero eyebrow="Blog" subtitle="Riflessioni su identità, posizionamento e crescita.">
+    Idee che<br />
+    <em class="not-italic font-semibold" style="color: var(--gold);">portano direzione.</em>
+  </PageHero>
+
+  <!-- Filtro categorie -->
+  {categorie && categorie.length > 0 && (
+    <div class="mx-auto max-w-4xl px-6 pb-2">
+      <div class="flex flex-wrap gap-2">
+        <a href="/blog" class="tax-pill tax-pill-active">Tutti</a>
+        {categorie.map((c: any) => (
+          <a href={`/blog/categoria/${c.slug}`} class="tax-pill">{c.nome}</a>
+        ))}
+      </div>
+    </div>
+  )}
+
+  <section class="mx-auto max-w-4xl px-6 py-10">
+    {articoli && articoli.length > 0 ? (
+      <div class="space-y-6">
+        {articoli.map((a: any) => (
+          <a
+            href={`/blog/${a.slug}`}
+            class="group flex flex-col rounded-2xl border p-7 transition-all duration-300"
+            style="border-color: var(--border); background-color: var(--bg-card);"
+            onmouseover="this.style.borderColor='var(--gold)'; this.style.transform='translateY(-2px)'"
+            onmouseout="this.style.borderColor='var(--border)'; this.style.transform='translateY(0)'"
+          >
+            <div class="mb-3 flex items-center gap-3">
+              <time
+                class="text-[10px] font-semibold uppercase tracking-[0.25em]"
+                style="color: var(--gold);"
+                datetime={a.created_at}
+              >
+                {new Date(a.created_at).toLocaleDateString('it-IT', { day: '2-digit', month: 'long', year: 'numeric' })}
+              </time>
+              {a.categorie && (
+                <span class="rounded-full border px-2 py-0.5 text-[9px] font-semibold uppercase tracking-widest"
+                  style="border-color:var(--border); color:var(--text-muted);">
+                  {a.categorie.nome}
+                </span>
+              )}
+            </div>
+
+            <h2 class="font-display mb-3 text-2xl font-light leading-snug transition-colors duration-200"
+              style="color: var(--text);">
+              {a.titolo}
+            </h2>
+
+            {a.estratto && (
+              <p class="mb-5 flex-1 text-sm leading-relaxed line-clamp-2" style="color: var(--text-muted);">
+                {a.estratto}
+              </p>
+            )}
+
+            <span
+              class="self-start text-xs font-semibold uppercase tracking-widest transition-colors duration-200"
+              style="color: var(--text-muted);"
+            >
+              Leggi l'articolo →
+            </span>
+          </a>
+        ))}
+      </div>
+    ) : (
+      <div class="py-24 text-center">
+        <p class="font-display text-2xl font-light mb-3" style="color: var(--text);">
+          Stiamo scrivendo qualcosa di interessante.
+        </p>
+        <p class="text-sm" style="color: var(--text-muted);">Gli articoli saranno disponibili a breve.</p>
+      </div>
+    )}
+  </section>
+
+</BaseLayout>
+
+<style is:global>
+.tax-pill {
+  padding: .3rem .85rem; border-radius: 9999px;
+  border: 1px solid var(--border); font-size: .7rem;
+  font-weight: 600; text-transform: uppercase; letter-spacing: .1em;
+  color: var(--text-muted); background: transparent;
+  text-decoration: none; transition: border-color .15s, color .15s;
+}
+.tax-pill:hover { border-color: var(--gold); color: var(--gold); }
+.tax-pill-active { border-color: var(--gold) !important; color: var(--gold) !important;
+  background-color: color-mix(in srgb, var(--gold) 10%, transparent); }
+</style>

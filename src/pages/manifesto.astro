@@ -1,0 +1,182 @@
+---
+import BaseLayout from '../layouts/BaseLayout.astro';
+import PageHero from '../components/common/PageHero.astro';
+---
+
+<BaseLayout
+  title="Il Manifesto"
+  description="Chi siamo, perché esistiamo e in cosa crediamo. Il manifesto di Personal Statement Studio."
+>
+
+  <PageHero eyebrow="Il Manifesto">
+    Chi sono e perché<br />
+    <em class="not-italic font-semibold" style="color: var(--gold);">esiste tutto questo.</em>
+  </PageHero>
+
+  <!-- ── IL PROBLEMA ───────────────────────────────────────────────────── -->
+  <section class="py-20 px-6" style="background-color: var(--bg-surface);">
+    <div class="mx-auto max-w-2xl">
+      <p class="mb-6 text-xs font-semibold uppercase tracking-[0.3em]" style="color: var(--gold);">Da dove nasce tutto</p>
+
+      <h2 class="font-display mb-8 text-3xl font-light leading-snug sm:text-4xl" style="color: var(--text);">
+        Il problema non era la mancanza di contenuti.<br />
+        Era la mancanza di <em class="not-italic font-semibold" style="color: var(--gold);">chiarezza.</em>
+      </h2>
+
+      <div class="space-y-5 text-base leading-relaxed" style="color: var(--text-muted);">
+        <p>
+          Ho visto imprenditori con prodotti straordinari comunicare come se fossero invisibili.
+          Ho visto professionisti di valore sparire nel rumore di un feed sovraffollato.
+          Ho visto creator con idee potenti perdere anni a inseguire format invece di costruire identità.
+        </p>
+        <p>
+          Il problema non era mai la qualità di ciò che facevano. Era come lo <strong style="color: var(--text);">percepivano gli altri.</strong>
+        </p>
+        <p>
+          La percezione non è superficiale. È il primo — e spesso unico — filtro attraverso cui le persone decidono se fidarsi di te,
+          seguirti, comprarti, sceglierti. E la percezione si costruisce. Con intenzione. Con coerenza. Con strategia.
+        </p>
+      </div>
+    </div>
+  </section>
+
+  <!-- ── LA RISPOSTA ───────────────────────────────────────────────────── -->
+  <section class="py-24 px-6">
+    <div class="mx-auto max-w-2xl">
+      <p class="mb-6 text-xs font-semibold uppercase tracking-[0.3em]" style="color: var(--gold);">La risposta</p>
+
+      <h2 class="font-display mb-8 text-3xl font-light leading-snug sm:text-4xl" style="color: var(--text);">
+        Personal Statement Studio nasce per<br />
+        <em class="not-italic font-semibold" style="color: var(--gold);">trasformare identità in presenza.</em>
+      </h2>
+
+      <div class="space-y-5 text-base leading-relaxed" style="color: var(--text-muted);">
+        <p>
+          Non siamo un'agenzia di contenuti. Non produciamo post per riempire un calendario editoriale.
+          Non inseguiamo trend. Non costruiamo follower. <strong style="color: var(--text);">Costruiamo posizionamento.</strong>
+        </p>
+        <p>
+          Ogni strumento che creiamo nasce da una domanda precisa: <em style="color: var(--text);">questo aiuta davvero qualcuno a essere visto
+          per quello che vale?</em> Se la risposta non è un sì inequivocabile, non esiste.
+        </p>
+        <p>
+          I nostri prodotti digitali non sono contenuti generici. Sono sistemi strutturati, progettati per chi
+          ha poco tempo, obiettivi chiari e zero tolleranza per le soluzioni superficiali.
+        </p>
+      </div>
+    </div>
+  </section>
+
+  <!-- ── I VALORI ──────────────────────────────────────────────────────── -->
+  <section class="py-24 px-6" style="background-color: var(--bg-surface);">
+    <div class="mx-auto max-w-4xl">
+      <p class="mb-4 text-center text-xs font-semibold uppercase tracking-[0.3em]" style="color: var(--gold);">In cosa crediamo</p>
+      <h2 class="font-display mb-16 text-center text-3xl font-light sm:text-4xl" style="color: var(--text);">
+        I principi che guidano ogni scelta.
+      </h2>
+
+      <div class="grid gap-8 sm:grid-cols-2">
+        {[
+          {
+            num: '—',
+            title: 'Chiarezza prima di tutto',
+            body: 'Un brand confuso non si difende con più contenuti. Si riprogetta dalle fondamenta. La chiarezza è un atto di rispetto verso chi ti ascolta.',
+          },
+          {
+            num: '—',
+            title: 'Coerenza come strategia',
+            body: 'La fiducia si costruisce nel tempo, con messaggi coerenti, estetiche riconoscibili, promesse mantenute. Non esiste shortcut.',
+          },
+          {
+            num: '—',
+            title: 'Identità come vantaggio competitivo',
+            body: 'Chi sei — davvero — è il tuo asset più difficile da replicare. Riallineare la tua identità significa costruire un vantaggio che dura.',
+          },
+          {
+            num: '—',
+            title: 'Risultati, non rumore',
+            body: 'Non aggiungiamo contenuti al feed. Portiamo direzione. Ogni strumento che pubblichiamo deve risolvere un problema reale con chiarezza chirurgica.',
+          },
+          {
+            num: '—',
+            title: 'Per chi non si accontenta',
+            body: 'I nostri strumenti sono pensati per imprenditori, sportivi, creator e professionisti che hanno già capito che il mediocre non basta. Per chi vuole il massimo da sé stesso.',
+          },
+          {
+            num: '—',
+            title: 'Alto rendimento, zero rumore',
+            body: 'L\'eccellenza non si annuncia. Si dimostra. Ogni parola, ogni prodotto, ogni scelta grafica deve essere al servizio di una cosa sola: il tuo posizionamento.',
+          },
+        ].map((v) => (
+          <div
+            class="rounded-2xl border p-7 transition-all duration-300"
+            style="border-color: var(--border); background-color: var(--bg-card);"
+            onmouseover="this.style.borderColor='var(--gold)'"
+            onmouseout="this.style.borderColor='var(--border)'"
+          >
+            <p class="mb-1 text-lg font-semibold" style="color: var(--gold);">{v.num}</p>
+            <h3 class="mb-3 text-sm font-semibold uppercase tracking-widest" style="color: var(--text);">{v.title}</h3>
+            <p class="text-sm leading-relaxed" style="color: var(--text-muted);">{v.body}</p>
+          </div>
+        ))}
+      </div>
+    </div>
+  </section>
+
+  <!-- ── A CHI È RIVOLTO ───────────────────────────────────────────────── -->
+  <section class="py-24 px-6">
+    <div class="mx-auto max-w-2xl text-center">
+      <p class="mb-6 text-xs font-semibold uppercase tracking-[0.3em]" style="color: var(--gold);">A chi parliamo</p>
+      <h2 class="font-display mb-10 text-3xl font-light leading-snug sm:text-4xl" style="color: var(--text);">
+        Non per tutti.<br />
+        <em class="not-italic font-semibold" style="color: var(--gold);">Per chi ha già deciso.</em>
+      </h2>
+
+      <div class="mb-12 grid grid-cols-2 gap-4 sm:grid-cols-4">
+        {['Imprenditori', 'Sportivi', 'Creator', 'Professionisti'].map((cat) => (
+          <div
+            class="rounded-xl border px-4 py-5 text-sm font-medium uppercase tracking-widest"
+            style="border-color: var(--gold); color: var(--gold);"
+          >
+            {cat}
+          </div>
+        ))}
+      </div>
+
+      <p class="mb-10 text-base leading-relaxed" style="color: var(--text-muted);">
+        Persone che hanno un potenziale reale, che costruiscono qualcosa di valore, e che vogliono che il mondo
+        lo percepisca per quello che è davvero. Non di più, non di meno — <strong style="color: var(--text);">esattamente per quello che è.</strong>
+      </p>
+
+      <a
+        href="/shop"
+        class="inline-block rounded-full px-10 py-4 text-sm font-semibold uppercase tracking-widest transition-all duration-200"
+        style="background-color: var(--gold); color: #0F0D0A;"
+        onmouseover="this.style.backgroundColor='var(--gold-hover)'"
+        onmouseout="this.style.backgroundColor='var(--gold)'"
+      >
+        Esplora i prodotti
+      </a>
+    </div>
+  </section>
+
+  <!-- ── FIRMA ─────────────────────────────────────────────────────────── -->
+  <section class="py-20 px-6 text-center" style="background-color: var(--bg-surface);">
+    <div class="mx-auto max-w-xl">
+      <img
+        src="/logo.png"
+        alt="Personal Statement Studio"
+        class="mx-auto mb-8 h-24 w-auto"
+        style="filter: drop-shadow(0 4px 16px color-mix(in srgb, var(--gold) 35%, transparent));"
+      />
+      <p class="font-display text-xl font-light italic leading-relaxed" style="color: var(--text-muted);">
+        "Non costruiamo brand. Costruiamo la versione più riconoscibile<br />
+        e strategica di ciò che sei già."
+      </p>
+      <p class="mt-6 text-xs uppercase tracking-[0.3em]" style="color: var(--gold);">
+        Personal Statement Studio
+      </p>
+    </div>
+  </section>
+
+</BaseLayout>

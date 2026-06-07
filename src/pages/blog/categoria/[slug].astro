@@ -1,0 +1,87 @@
+---
+import BaseLayout from '../../../layouts/BaseLayout.astro';
+import PageHero from '../../../components/common/PageHero.astro';
+
+const { slug } = Astro.params;
+
+const { data: categoria } = await Astro.locals.supabase
+  .from('categorie')
+  .select('id, nome, slug, descrizione')
+  .eq('slug', slug)
+  .in('tipo', ['blog', 'both'])
+  .maybeSingle();
+
+if (!categoria) return Astro.redirect('/blog');
+
+const { data: articoli } = await Astro.locals.supabase
+  .from('articoli')
+  .select('id, titolo, slug, estratto, created_at')
+  .eq('pubblicato', true)
+  .eq('categoria_id', categoria.id)
+  .order('created_at', { ascending: false });
+
+// Tutte le categorie blog per la barra filtri
+const { data: tutteCategorie } = await Astro.locals.supabase
+  .from('categorie').select('nome, slug').in('tipo', ['blog','both']).order('nome');
+---
+
+<BaseLayout
+  title={`${categoria.nome} — Blog`}
+  description={categoria.descrizione ?? `Articoli nella categoria ${categoria.nome}.`}
+>
+  <PageHero eyebrow="Blog · Categoria" subtitle={categoria.descrizione ?? ''}>
+    {categoria.nome}
+  </PageHero>
+
+  <!-- Filtro categorie -->
+  <div class="mx-auto max-w-4xl px-6 pt-4">
+    <div class="flex flex-wrap gap-2">
+      <a href="/blog" class="tax-pill">Tutti</a>
+      {(tutteCategorie ?? []).map((c: any) => (
+        <a href={`/blog/categoria/${c.slug}`}
+          class={`tax-pill ${c.slug === slug ? 'tax-pill-active' : ''}`}>
+          {c.nome}
+        </a>
+      ))}
+    </div>
+  </div>
+
+  <section class="mx-auto max-w-4xl px-6 py-10">
+    {articoli && articoli.length > 0 ? (
+      <div class="space-y-6">
+        {articoli.map((a: any) => (
+          <a href={`/blog/${a.slug}`}
+            class="group flex flex-col rounded-2xl border p-7 transition-all duration-300"
+            style="border-color:var(--border); background-color:var(--bg-card);"
+            onmouseover="this.style.borderColor='var(--gold)'; this.style.transform='translateY(-2px)'"
+            onmouseout="this.style.borderColor='var(--border)'; this.style.transform='translateY(0)'">
+            <time class="mb-3 text-[10px] font-semibold uppercase tracking-[0.25em]" style="color:var(--gold);" datetime={a.created_at}>
+              {new Date(a.created_at).toLocaleDateString('it-IT', { day: '2-digit', month: 'long', year: 'numeric' })}
+            </time>
+            <h2 class="font-display mb-3 text-2xl font-light leading-snug" style="color:var(--text);">{a.titolo}</h2>
+            {a.estratto && <p class="mb-5 flex-1 text-sm leading-relaxed line-clamp-2" style="color:var(--text-muted);">{a.estratto}</p>}
+            <span class="self-start text-xs font-semibold uppercase tracking-widest" style="color:var(--text-muted);">Leggi l'articolo →</span>
+          </a>
+        ))}
+      </div>
+    ) : (
+      <div class="py-20 text-center">
+        <p class="font-display text-2xl font-light mb-3" style="color:var(--text);">Nessun articolo in questa categoria.</p>
+        <a href="/blog" class="text-sm" style="color:var(--gold);">← Torna al blog</a>
+      </div>
+    )}
+  </section>
+</BaseLayout>
+
+<style is:global>
+.tax-pill {
+  padding: .3rem .85rem; border-radius: 9999px;
+  border: 1px solid var(--border); font-size: .7rem;
+  font-weight: 600; text-transform: uppercase; letter-spacing: .1em;
+  color: var(--text-muted); background: transparent;
+  text-decoration: none; transition: border-color .15s, color .15s;
+}
+.tax-pill:hover { border-color: var(--gold); color: var(--gold); }
+.tax-pill-active { border-color: var(--gold) !important; color: var(--gold) !important;
+  background-color: color-mix(in srgb, var(--gold) 10%, transparent); }
+</style>

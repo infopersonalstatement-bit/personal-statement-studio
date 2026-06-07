@@ -1,0 +1,10 @@
+User-agent: *
+Allow: /
+
+# Aree private — non indicizzare
+Disallow: /dashboard
+Disallow: /admin
+Disallow: /api/
+Disallow: /auth/
+
+Sitemap: https://personalstatementstudio.com/sitemap.xml

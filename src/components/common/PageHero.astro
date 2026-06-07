@@ -1,0 +1,90 @@
+---
+interface Props {
+  eyebrow?: string;
+  subtitle?: string;
+  ctaText?: string;
+  ctaHref?: string;
+  minHeight?: string;
+}
+
+const {
+  eyebrow,
+  subtitle,
+  ctaText,
+  ctaHref,
+  minHeight = '55vh',
+} = Astro.props;
+
+const navLinks = [
+  { href: '/',          label: 'Home' },
+  { href: '/manifesto', label: 'Il Manifesto' },
+  { href: '/blog',      label: 'Blog' },
+  { href: '/shop',      label: 'Prodotti' },
+];
+
+const pathname = Astro.url.pathname;
+---
+
+<section
+  class="relative flex flex-col items-center justify-center overflow-hidden px-6 py-24 text-center"
+  style={`min-height: ${minHeight};`}
+>
+
+  <!-- Gradiente oro radiale -->
+  <div
+    class="pointer-events-none absolute inset-0"
+    style="background: radial-gradient(ellipse 100% 80% at 50% -5%, color-mix(in srgb, var(--gold) 18%, transparent) 0%, transparent 65%);"
+  ></div>
+
+  <!-- Logo completo centrato (monogramma + testo integrato) -->
+  <div class="mb-10 flex justify-center">
+    <img
+      src="/logo-full.png"
+      alt="Personal Statement Studio"
+      class="logo-full w-56 sm:w-64"
+    />
+  </div>
+
+  {eyebrow && (
+    <p class="mb-4 text-xs font-semibold uppercase tracking-[0.3em]" style="color: var(--text-muted);">
+      {eyebrow}
+    </p>
+  )}
+
+  <div class="font-display mx-auto max-w-4xl text-5xl font-light leading-[1.1] sm:text-6xl lg:text-7xl" style="color: var(--text);">
+    <slot />
+  </div>
+
+  {subtitle && (
+    <p class="mx-auto mt-6 max-w-xl text-center text-base leading-relaxed sm:text-lg" style="color: var(--text-muted);">
+      {subtitle}
+    </p>
+  )}
+
+  <nav class="mt-10 flex flex-wrap items-center justify-center gap-3">
+    {navLinks.map(link => {
+      // "Home" è attiva solo se siamo esattamente su /, non su sottopagine
+      const isActive = link.href === '/'
+        ? pathname === '/'
+        : pathname === link.href || pathname.startsWith(link.href + '/');
+      return (
+        <a
+          href={link.href}
+          class="nav-pill"
+          style={isActive
+            ? 'border-color: var(--gold); color: var(--gold); background-color: color-mix(in srgb, var(--gold) 8%, transparent);'
+            : ''}
+        >
+          {link.label}
+        </a>
+      );
+    })}
+  </nav>
+
+  {ctaText && ctaHref && (
+    <a href={ctaHref} class="cta-main mt-8">
+      {ctaText}
+    </a>
+  )}
+
+</section>

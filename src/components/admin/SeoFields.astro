@@ -1,0 +1,328 @@
+---
+interface Props {
+  seoTitolo?:      string;
+  seoDescrizione?: string;
+  seoOgImage?:     string;
+  slug?:           string;
+  slugPrefix?:     string; // '/shop/' oppure '/blog/'
+  slugFixed?:      boolean; // lasciato per retrocompatibilità, non più usato
+}
+
+const {
+  seoTitolo      = '',
+  seoDescrizione = '',
+  seoOgImage     = '',
+  slug           = '',
+  slugPrefix     = '/shop/',
+  slugFixed      = false,
+} = Astro.props;
+---
+
+<!-- Sezione SEO collassabile -->
+<details class="group rounded-2xl border transition-all duration-200" style="border-color: var(--border);">
+  <summary
+    class="flex cursor-pointer list-none items-center justify-between px-6 py-4 select-none"
+    style="background-color: color-mix(in srgb, var(--surface) 40%, transparent); border-radius: inherit;"
+  >
+    <div class="flex items-center gap-3">
+      <svg xmlns="http://www.w3.org/2000/svg" class="h-4 w-4 flex-shrink-0" fill="none" viewBox="0 0 24 24" stroke="currentColor" style="color: var(--gold);">
+        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+          d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z" />
+      </svg>
+      <span class="text-sm font-semibold uppercase tracking-widest" style="color: var(--text);">
+        SEO &amp; Condivisione social
+      </span>
+      <span class="rounded-full px-2 py-0.5 text-[9px] font-bold uppercase tracking-widest"
+        style="background-color: color-mix(in srgb, var(--gold) 15%, transparent); color: var(--gold);">
+        Opzionale
+      </span>
+    </div>
+    <svg xmlns="http://www.w3.org/2000/svg" class="h-4 w-4 transition-transform duration-200 group-open:rotate-180" fill="none" viewBox="0 0 24 24" stroke="currentColor" style="color: var(--text-muted);">
+      <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 9l-7 7-7-7" />
+    </svg>
+  </summary>
+
+  <div class="space-y-5 px-6 pb-6 pt-5">
+
+    <!-- Spiegazione rapida -->
+    <div class="rounded-xl border-l-4 py-3 pl-4 pr-4 text-xs leading-relaxed" style="border-color: var(--gold); background-color: color-mix(in srgb, var(--gold) 6%, transparent); color: var(--text-muted);">
+      <strong style="color: var(--text);">Cosa sono questi campi?</strong><br />
+      Il <em>Meta Title</em> è il testo blu che appare in Google. La <em>Meta Description</em> è il riassunto sotto. Se lasci vuoti, Google userà automaticamente il titolo e l'estratto del contenuto.
+    </div>
+
+    <!-- Slug -->
+    {slug !== undefined && (
+      <div>
+        <label class="mb-1.5 block text-xs font-semibold uppercase tracking-widest" style="color: var(--text-muted);">
+          URL (Slug) <span class="normal-case font-normal" style="color:var(--text-muted);">— come apparirà il link</span>
+        </label>
+
+        <div class="flex items-center overflow-hidden rounded-xl border" style="border-color: var(--border);">
+          <span class="flex-shrink-0 border-r px-3 py-2.5 text-xs font-mono" style="border-color: var(--border); color: var(--text-muted); background-color: var(--bg-surface);">{slugPrefix}</span>
+          <input
+            type="text"
+            name="slug"
+            id="slug-input"
+            value={slug}
+            placeholder={slugPrefix === '/blog/' ? 'titolo-articolo' : 'nome-prodotto'}
+            class="flex-1 bg-transparent px-3 py-2.5 text-sm font-mono outline-none"
+            style="color: var(--text);"
+          />
+        </div>
+
+        {slug ? (
+          <p class="mt-1.5 flex items-center gap-1.5 text-xs" style="color: #f59e0b;">
+            <svg xmlns="http://www.w3.org/2000/svg" class="h-3.5 w-3.5 flex-shrink-0" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+              <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 9v2m0 4h.01M10.29 3.86L1.82 18a2 2 0 001.71 3h16.94a2 2 0 001.71-3L13.71 3.86a2 2 0 00-3.42 0z" />
+            </svg>
+            Cambiare lo slug invaliderà i link già condivisi. Lascia vuoto per non modificarlo.
+          </p>
+        ) : (
+          <p class="mt-1 text-xs" style="color:var(--text-muted);">Solo lettere minuscole, numeri e trattini. Verrà generato automaticamente se lasci vuoto.</p>
+        )}
+      </div>
+    )}
+
+    <!-- Meta Title -->
+    <div>
+      <label class="mb-1.5 flex items-center justify-between text-xs font-semibold uppercase tracking-widest" style="color: var(--text-muted);">
+        <span>Meta Title</span>
+        <span id="seo-title-count" class="font-mono font-normal normal-case" style="color: var(--text-muted);">0 / 60</span>
+      </label>
+      <input
+        type="text"
+        name="seo_titolo"
+        id="seo-title-input"
+        value={seoTitolo}
+        maxlength="100"
+        placeholder="Lascia vuoto per usare il titolo del contenuto"
+        class="auth-input w-full"
+      />
+      <p class="mt-1 text-xs" style="color:var(--text-muted);">Ideale: 50–60 caratteri. Appare nella scheda del browser e nei risultati Google.</p>
+    </div>
+
+    <!-- Meta Description -->
+    <div>
+      <label class="mb-1.5 flex items-center justify-between text-xs font-semibold uppercase tracking-widest" style="color: var(--text-muted);">
+        <span>Meta Description</span>
+        <span id="seo-desc-count" class="font-mono font-normal normal-case" style="color: var(--text-muted);">0 / 160</span>
+      </label>
+      <textarea
+        name="seo_descrizione"
+        id="seo-desc-input"
+        rows="3"
+        maxlength="300"
+        placeholder="Lascia vuoto per usare l'estratto del contenuto"
+        class="auth-input w-full resize-none"
+      >{seoDescrizione}</textarea>
+      <p class="mt-1 text-xs" style="color:var(--text-muted);">Ideale: 150–160 caratteri. È il testo che Google mostra sotto il titolo.</p>
+    </div>
+
+    <!-- OG Image — upload o URL esterno -->
+    <div>
+      <label class="mb-2 block text-xs font-semibold uppercase tracking-widest" style="color: var(--text-muted);">
+        Immagine Social (OG Image)
+        <span class="normal-case font-normal" style="color:var(--text-muted);"> — anteprima quando condividi il link</span>
+      </label>
+
+      <!-- Toggle upload / URL -->
+      <div class="mb-3 flex rounded-xl border overflow-hidden" style="border-color: var(--border);">
+        <button type="button" id="og-tab-upload"
+          class="og-tab flex-1 py-2 text-xs font-semibold uppercase tracking-wider transition-all duration-200"
+          style="background-color: var(--gold); color: #0F0D0A;"
+          onclick="switchOgTab('upload')">
+          Carica file
+        </button>
+        <button type="button" id="og-tab-url"
+          class="og-tab flex-1 py-2 text-xs font-semibold uppercase tracking-wider transition-all duration-200"
+          style="background-color: transparent; color: var(--text-muted);"
+          onclick="switchOgTab('url')">
+          Link esterno
+        </button>
+      </div>
+
+      <!-- Pannello upload -->
+      <div id="og-panel-upload">
+        <div
+          class="flex items-center gap-4 rounded-xl border-2 border-dashed px-5 py-5 transition-colors duration-200"
+          style="border-color: var(--border);"
+        >
+          <svg xmlns="http://www.w3.org/2000/svg" class="h-7 w-7 flex-shrink-0" fill="none" viewBox="0 0 24 24" stroke="currentColor" style="color: var(--gold);">
+            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.5" d="M4 16l4.586-4.586a2 2 0 012.828 0L16 16m-2-2l1.586-1.586a2 2 0 012.828 0L20 14m-6-6h.01M6 20h12a2 2 0 002-2V6a2 2 0 00-2-2H6a2 2 0 00-2 2v12a2 2 0 002 2z" />
+          </svg>
+          <div class="flex-1 min-w-0">
+            <p class="text-sm" style="color: var(--text);">Seleziona un'immagine</p>
+            <p class="text-xs" style="color: var(--text-muted);">JPG, PNG, WebP · Max 5MB · Consigliato 1200×630 px</p>
+          </div>
+          <input
+            type="file"
+            name="seo_og_image_file"
+            id="og-file-input"
+            accept="image/jpeg,image/png,image/webp,image/gif"
+            class="absolute opacity-0"
+            style="width:1px; height:1px;"
+          />
+          <label for="og-file-input"
+            class="cursor-pointer flex-shrink-0 rounded-full px-4 py-2 text-xs font-semibold uppercase tracking-widest"
+            style="background-color: var(--gold); color: #0F0D0A;">
+            Scegli
+          </label>
+        </div>
+        <p id="og-filename" class="mt-1.5 text-xs" style="color: var(--gold);"></p>
+
+        <!-- Anteprima immagine già salvata -->
+        {seoOgImage && (
+          <div class="mt-3 flex items-center gap-3">
+            <img src={seoOgImage} alt="OG Image attuale" class="h-16 w-28 rounded-lg object-cover" style="border: 1px solid var(--border);" />
+            <div>
+              <p class="text-xs font-semibold" style="color: var(--text);">Immagine attuale</p>
+              <p class="text-xs" style="color: var(--text-muted);">Carica un nuovo file per sostituirla</p>
+            </div>
+          </div>
+        )}
+      </div>
+
+      <!-- Pannello URL esterno -->
+      <div id="og-panel-url" class="hidden">
+        <input
+          type="url"
+          name="seo_og_image_url"
+          value={seoOgImage?.startsWith('http') ? seoOgImage : ''}
+          placeholder="https://esempio.com/immagine.jpg"
+          class="auth-input w-full"
+        />
+        <p class="mt-1 text-xs" style="color: var(--text-muted);">URL diretto di un'immagine online. Dimensione consigliata: 1200×630 px.</p>
+      </div>
+
+      <!-- Campo hidden per mantenere il valore attuale -->
+      <input type="hidden" name="seo_og_image_current" value={seoOgImage ?? ''} />
+    </div>
+
+    <!-- Anteprima Google simulata -->
+    <div>
+      <p class="mb-2 text-xs font-semibold uppercase tracking-widest" style="color: var(--text-muted);">Anteprima risultato Google</p>
+      <div class="rounded-xl border p-4" style="border-color: var(--border); background-color: var(--bg-card);">
+        <p id="google-url" class="mb-1 text-xs" style="color: #3c8505;">personalstatementstudio.com › …</p>
+        <p id="google-title" class="text-base font-medium" style="color: #1a0dab; cursor: pointer; text-decoration: underline;">
+          {seoTitolo || '(titolo del contenuto)'}
+        </p>
+        <p id="google-desc" class="mt-0.5 text-sm" style="color: #4d5156; line-height: 1.5;">
+          {seoDescrizione || '(estratto del contenuto)'}
+        </p>
+      </div>
+    </div>
+
+  </div>
+</details>
+
+<script is:inline>
+(function () {
+  // Contatori caratteri
+  function setupCounter(inputId, counterId, max) {
+    const input   = document.getElementById(inputId);
+    const counter = document.getElementById(counterId);
+    if (!input || !counter) return;
+    const update = () => {
+      const len = input.value.length;
+      counter.textContent = `${len} / ${max}`;
+      counter.style.color = len > max ? '#ef4444' : len > max * 0.9 ? '#f59e0b' : 'var(--text-muted)';
+    };
+    input.addEventListener('input', update);
+    update();
+  }
+  setupCounter('seo-title-input', 'seo-title-count', 60);
+  setupCounter('seo-desc-input',  'seo-desc-count',  160);
+
+  // Anteprima Google in tempo reale
+  const titleInput = document.getElementById('seo-title-input');
+  const descInput  = document.getElementById('seo-desc-input');
+  const gTitle     = document.getElementById('google-title');
+  const gDesc      = document.getElementById('google-desc');
+  const mainTitle  = document.querySelector('input[name="nome"], input[name="titolo"]');
+
+  function updatePreview() {
+    const t = titleInput?.value || mainTitle?.value || '(titolo del contenuto)';
+    const d = descInput?.value  || '(estratto del contenuto)';
+    if (gTitle) gTitle.textContent = t.length > 60  ? t.slice(0, 60)  + '…' : t;
+    if (gDesc)  gDesc.textContent  = d.length > 160 ? d.slice(0, 160) + '…' : d;
+  }
+  titleInput?.addEventListener('input', updatePreview);
+  descInput?.addEventListener('input',  updatePreview);
+  mainTitle?.addEventListener('input',  updatePreview);
+
+  // Slug prodotto: auto-genera dal nome
+  const slugInput = document.getElementById('slug-input');
+  const nomeField = document.querySelector('input[name="nome"]');
+  if (slugInput && nomeField && !slugInput.value) {
+    nomeField.addEventListener('input', () => {
+      if (!slugInput.dataset.manual) {
+        slugInput.value = nomeField.value
+          .toLowerCase()
+          .replace(/[àáâ]/g,'a').replace(/[èé]/g,'e').replace(/[ìí]/g,'i')
+          .replace(/[òó]/g,'o').replace(/[ùú]/g,'u')
+          .replace(/[^a-z0-9]+/g,'-').replace(/^-+|-+$/g,'');
+      }
+    });
+    slugInput.addEventListener('input', () => { slugInput.dataset.manual = '1'; });
+  }
+
+  // Toggle upload / URL esterno
+  window.switchOgTab = function (tab) {
+    const uploadPanel = document.getElementById('og-panel-upload');
+    const urlPanel    = document.getElementById('og-panel-url');
+    const tabUpload   = document.getElementById('og-tab-upload');
+    const tabUrl      = document.getElementById('og-tab-url');
+    if (!uploadPanel || !urlPanel || !tabUpload || !tabUrl) return;
+
+    if (tab === 'upload') {
+      uploadPanel.classList.remove('hidden');
+      urlPanel.classList.add('hidden');
+      tabUpload.style.backgroundColor = 'var(--gold)';
+      tabUpload.style.color           = '#0F0D0A';
+      tabUrl.style.backgroundColor    = 'transparent';
+      tabUrl.style.color              = 'var(--text-muted)';
+    } else {
+      uploadPanel.classList.add('hidden');
+      urlPanel.classList.remove('hidden');
+      tabUrl.style.backgroundColor    = 'var(--gold)';
+      tabUrl.style.color              = '#0F0D0A';
+      tabUpload.style.backgroundColor = 'transparent';
+      tabUpload.style.color           = 'var(--text-muted)';
+    }
+  };
+
+  // Preview filename OG
+  const ogFileInput = document.getElementById('og-file-input');
+  const ogFilename  = document.getElementById('og-filename');
+  if (ogFileInput && ogFilename) {
+    ogFileInput.addEventListener('change', () => {
+      const file = ogFileInput.files?.[0];
+      if (file) {
+        ogFilename.textContent = `✔ ${file.name} (${(file.size/1024).toFixed(0)} KB)`;
+        // Anteprima locale immediata
+        const reader = new FileReader();
+        reader.onload = (e) => {
+          let preview = document.getElementById('og-local-preview');
+          if (!preview) {
+            preview = document.createElement('img');
+            preview.id = 'og-local-preview';
+            preview.className = 'mt-3 h-20 w-36 rounded-lg object-cover';
+            preview.style.border = '1px solid var(--border)';
+            ogFilename.after(preview);
+          }
+          preview.src = e.target.result;
+        };
+        reader.readAsDataURL(file);
+      }
+    });
+  }
+
+  // Se c'è già un'immagine salvata con un URL esterno, pre-seleziona il tab URL
+  const currentVal = document.querySelector('input[name="seo_og_image_current"]')?.value;
+  if (currentVal && currentVal.startsWith('http')) {
+    // Controlla se è un URL esterno (non un upload nostro)
+    const isExternal = !currentVal.includes('supabase.co');
+    if (isExternal) window.switchOgTab('url');
+  }
+})();
+</script>

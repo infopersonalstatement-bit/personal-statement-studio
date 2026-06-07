@@ -1,0 +1,208 @@
+---
+import AdminLayout from '../../layouts/AdminLayout.astro';
+import { createSupabaseAdminClient } from '../../lib/supabase/server';
+
+const supabase = createSupabaseAdminClient();
+
+let successMsg = '';
+let errorMsg   = '';
+
+function slugify(t: string) {
+  return t.toLowerCase()
+    .replace(/[àáâãäå]/g,'a').replace(/[èéêë]/g,'e')
+    .replace(/[ìíîï]/g,'i').replace(/[òóôõö]/g,'o').replace(/[ùúûü]/g,'u')
+    .replace(/[^a-z0-9]+/g,'-').replace(/^-+|-+$/g,'');
+}
+
+// ── POST ──────────────────────────────────────────────────
+if (Astro.request.method === 'POST') {
+  const fd     = await Astro.request.formData();
+  const azione = fd.get('azione') as string;
+
+  // ── Crea categoria ──────────────────────────────────────
+  if (azione === 'crea_categoria') {
+    const nome        = (fd.get('nome') as string)?.trim();
+    const descrizione = (fd.get('descrizione') as string)?.trim() || null;
+    const tipo        = (fd.get('tipo') as string) || 'both';
+    const slugInput   = (fd.get('slug') as string)?.trim();
+    const slug        = slugInput ? slugify(slugInput) : slugify(nome ?? '');
+    if (!nome || !slug) {
+      errorMsg = 'Nome obbligatorio.';
+    } else {
+      const { error } = await supabase.from('categorie').insert({ nome, slug, descrizione, tipo });
+      if (error) errorMsg = `Errore: ${error.message}`;
+      else       successMsg = `Categoria "${nome}" creata.`;
+    }
+  }
+
+  // ── Elimina categoria ───────────────────────────────────
+  if (azione === 'elimina_categoria') {
+    const id = fd.get('id') as string;
+    const { error } = await supabase.from('categorie').delete().eq('id', id);
+    if (error) errorMsg = `Errore: ${error.message}`;
+    else       successMsg = 'Categoria eliminata.';
+  }
+
+  // ── Crea tag ────────────────────────────────────────────
+  if (azione === 'crea_tag') {
+    const nome      = (fd.get('nome') as string)?.trim();
+    const tipo      = (fd.get('tipo') as string) || 'both';
+    const slugInput = (fd.get('slug') as string)?.trim();
+    const slug      = slugInput ? slugify(slugInput) : slugify(nome ?? '');
+    if (!nome || !slug) {
+      errorMsg = 'Nome obbligatorio.';
+    } else {
+      const { error } = await supabase.from('tag').insert({ nome, slug, tipo });
+      if (error) errorMsg = `Errore: ${error.message}`;
+      else       successMsg = `Tag "${nome}" creato.`;
+    }
+  }
+
+  // ── Elimina tag ─────────────────────────────────────────
+  if (azione === 'elimina_tag') {
+    const id = fd.get('id') as string;
+    const { error } = await supabase.from('tag').delete().eq('id', id);
+    if (error) errorMsg = `Errore: ${error.message}`;
+    else       successMsg = 'Tag eliminato.';
+  }
+}
+
+// ── Carica dati ───────────────────────────────────────────
+const [{ data: categorie }, { data: tags }] = await Promise.all([
+  supabase.from('categorie').select('*').order('tipo').order('nome'),
+  supabase.from('tag').select('*').order('tipo').order('nome'),
+]);
+
+const tipoLabel: Record<string, string> = { blog: 'Blog', shop: 'Shop', both: 'Entrambi' };
+---
+
+<AdminLayout title="Categorie & Tag" activeNav="categorie">
+
+  {successMsg && <div class="mb-6 rounded-xl border border-green-600/40 bg-green-600/10 px-5 py-3 text-sm text-green-400">{successMsg}</div>}
+  {errorMsg   && <div class="mb-6 rounded-xl border border-red-600/40   bg-red-600/10   px-5 py-3 text-sm text-red-400">{errorMsg}</div>}
+
+  <div class="grid gap-10 lg:grid-cols-2">
+
+    <!-- ── CATEGORIE ─────────────────────────────────────── -->
+    <section>
+      <h2 class="mb-5 font-display text-xl font-light" style="color:var(--text);">Categorie</h2>
+
+      <!-- Form creazione -->
+      <div class="mb-6 rounded-2xl border p-6" style="border-color:var(--border); background-color:var(--bg-card);">
+        <p class="mb-4 text-xs font-semibold uppercase tracking-widest" style="color:var(--text-muted);">Nuova categoria</p>
+        <form method="POST" class="space-y-3">
+          <input type="hidden" name="azione" value="crea_categoria" />
+          <input type="text" name="nome" placeholder="Nome categoria *" required
+            class="auth-input w-full" id="cat-nome"
+            oninput="document.getElementById('cat-slug').value=slugify(this.value)" />
+          <input type="text" name="slug" placeholder="slug-url (auto)" id="cat-slug"
+            class="auth-input w-full font-mono text-xs" />
+          <input type="text" name="descrizione" placeholder="Descrizione breve (opzionale)"
+            class="auth-input w-full" />
+          <div class="flex items-center gap-3">
+            <select name="tipo" class="auth-input flex-1">
+              <option value="both">Blog + Shop</option>
+              <option value="blog">Solo Blog</option>
+              <option value="shop">Solo Shop</option>
+            </select>
+            <button type="submit" class="auth-submit whitespace-nowrap">+ Crea</button>
+          </div>
+        </form>
+      </div>
+
+      <!-- Lista categorie -->
+      {categorie && categorie.length > 0 ? (
+        <div class="space-y-2">
+          {categorie.map((c: any) => (
+            <div class="flex items-center justify-between rounded-xl border px-4 py-3 gap-3"
+              style="border-color:var(--border); background-color:var(--bg-card);">
+              <div class="min-w-0">
+                <p class="font-medium text-sm truncate" style="color:var(--text);">{c.nome}</p>
+                <p class="text-[10px] font-mono" style="color:var(--text-muted);">/{c.slug} · {tipoLabel[c.tipo]}</p>
+                {c.descrizione && <p class="text-xs truncate" style="color:var(--text-muted);">{c.descrizione}</p>}
+              </div>
+              <form method="POST">
+                <input type="hidden" name="azione" value="elimina_categoria" />
+                <input type="hidden" name="id" value={c.id} />
+                <button type="submit"
+                  class="flex-shrink-0 rounded-full border px-3 py-1 text-[10px] uppercase tracking-widest transition-colors"
+                  style="border-color:var(--border); color:var(--text-muted);"
+                  onmouseover="this.style.borderColor='#ef4444';this.style.color='#ef4444'"
+                  onmouseout="this.style.borderColor='var(--border)';this.style.color='var(--text-muted)'"
+                  onclick="return confirm('Eliminare questa categoria? Gli articoli/prodotti associati rimarranno senza categoria.')">
+                  Elimina
+                </button>
+              </form>
+            </div>
+          ))}
+        </div>
+      ) : (
+        <p class="text-sm" style="color:var(--text-muted);">Nessuna categoria ancora creata.</p>
+      )}
+    </section>
+
+    <!-- ── TAG ───────────────────────────────────────────── -->
+    <section>
+      <h2 class="mb-5 font-display text-xl font-light" style="color:var(--text);">Tag</h2>
+
+      <!-- Form creazione -->
+      <div class="mb-6 rounded-2xl border p-6" style="border-color:var(--border); background-color:var(--bg-card);">
+        <p class="mb-4 text-xs font-semibold uppercase tracking-widest" style="color:var(--text-muted);">Nuovo tag</p>
+        <form method="POST" class="space-y-3">
+          <input type="hidden" name="azione" value="crea_tag" />
+          <input type="text" name="nome" placeholder="Nome tag *" required
+            class="auth-input w-full" id="tag-nome"
+            oninput="document.getElementById('tag-slug').value=slugify(this.value)" />
+          <input type="text" name="slug" placeholder="slug-url (auto)" id="tag-slug"
+            class="auth-input w-full font-mono text-xs" />
+          <div class="flex items-center gap-3">
+            <select name="tipo" class="auth-input flex-1">
+              <option value="both">Blog + Shop</option>
+              <option value="blog">Solo Blog</option>
+              <option value="shop">Solo Shop</option>
+            </select>
+            <button type="submit" class="auth-submit whitespace-nowrap">+ Crea</button>
+          </div>
+        </form>
+      </div>
+
+      <!-- Lista tag -->
+      {tags && tags.length > 0 ? (
+        <div class="flex flex-wrap gap-2">
+          {tags.map((t: any) => (
+            <div class="flex items-center gap-1.5 rounded-full border pl-3 pr-1 py-1"
+              style="border-color:var(--border); background-color:var(--bg-card);">
+              <span class="text-xs font-medium" style="color:var(--text);">{t.nome}</span>
+              <span class="text-[9px] uppercase" style="color:var(--text-muted);">{tipoLabel[t.tipo]}</span>
+              <form method="POST" class="inline">
+                <input type="hidden" name="azione" value="elimina_tag" />
+                <input type="hidden" name="id" value={t.id} />
+                <button type="submit"
+                  class="flex h-5 w-5 items-center justify-center rounded-full text-xs transition-colors"
+                  style="color:var(--text-muted);"
+                  onmouseover="this.style.color='#ef4444'"
+                  onmouseout="this.style.color='var(--text-muted)'"
+                  onclick="return confirm('Eliminare il tag «' + this.closest('.flex').querySelector('.font-medium').textContent + '»?')">
+                  ✕
+                </button>
+              </form>
+            </div>
+          ))}
+        </div>
+      ) : (
+        <p class="text-sm" style="color:var(--text-muted);">Nessun tag ancora creato.</p>
+      )}
+    </section>
+
+  </div>
+
+</AdminLayout>
+
+<script is:inline>
+function slugify(t) {
+  return (t||'').toLowerCase()
+    .replace(/[àáâãäå]/g,'a').replace(/[èéêë]/g,'e')
+    .replace(/[ìíîï]/g,'i').replace(/[òóôõö]/g,'o').replace(/[ùúûü]/g,'u')
+    .replace(/[^a-z0-9]+/g,'-').replace(/^-+|-+$/g,'');
+}
+</script>

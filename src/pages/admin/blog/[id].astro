@@ -1,0 +1,234 @@
+---
+import AdminLayout from '../../../layouts/AdminLayout.astro';
+import { createSupabaseAdminClient } from '../../../lib/supabase/server';
+import SeoFields from '../../../components/admin/SeoFields.astro';
+import { processOgImage } from '../../../lib/og-image';
+
+const supabase = createSupabaseAdminClient();
+const { id }   = Astro.params;
+
+let successMsg = '';
+let errorMsg   = '';
+
+function slugify(text: string) {
+  return text
+    .toLowerCase()
+    .replace(/[àáâãäå]/g, 'a').replace(/[èéêë]/g, 'e')
+    .replace(/[ìíîï]/g, 'i').replace(/[òóôõö]/g, 'o')
+    .replace(/[ùúûü]/g, 'u').replace(/ç/g, 'c').replace(/ñ/g, 'n')
+    .replace(/[^a-z0-9]+/g, '-').replace(/^-+|-+$/g, '');
+}
+
+// ─── Gestione POST ────────────────────────────────────────────────────────────
+if (Astro.request.method === 'POST') {
+  const formData  = await Astro.request.formData();
+  const titolo          = (formData.get('titolo')          as string)?.trim();
+  const estratto        = (formData.get('estratto')        as string)?.trim();
+  const contenuto       = (formData.get('contenuto')       as string)?.trim();
+  const pubblicato      = formData.get('pubblicato') === 'on';
+  const seo_titolo      = (formData.get('seo_titolo')      as string)?.trim() || null;
+  const seo_descrizione = (formData.get('seo_descrizione') as string)?.trim() || null;
+  const seo_og_image    = await processOgImage(formData);
+  const slugInput       = (formData.get('slug')            as string)?.trim();
+  const slug            = slugInput ? slugify(slugInput) : null;
+  const categoria_id    = (formData.get('categoria_id') as string)?.trim() || null;
+  const tagIds          = formData.getAll('tag_ids') as string[];
+
+  if (!titolo || !contenuto) {
+    errorMsg = 'Titolo e contenuto sono obbligatori.';
+  } else {
+    const updatePayload: Record<string, any> = {
+      titolo, estratto: estratto || null, contenuto, pubblicato,
+      seo_titolo, seo_descrizione, seo_og_image, categoria_id,
+    };
+    if (slug) updatePayload.slug = slug;
+
+    const { error: dbErr } = await supabase.from('articoli').update(updatePayload).eq('id', id);
+
+    if (dbErr) {
+      errorMsg = `Errore salvataggio: ${dbErr.message}`;
+    } else {
+      // Aggiorna tag: elimina tutti, reinserisci selezionati
+      await supabase.from('articoli_tag').delete().eq('articolo_id', id);
+      if (tagIds.length > 0) {
+        await supabase.from('articoli_tag').insert(tagIds.map(tid => ({ articolo_id: id, tag_id: tid })));
+      }
+      successMsg = 'Articolo aggiornato con successo!';
+    }
+  }
+}
+
+// ─── Carica articolo + categorie + tag ───────────────────────────────────────
+const [
+  { data: articolo, error: fetchErr },
+  { data: categorie },
+  { data: tagDisponibili },
+] = await Promise.all([
+  supabase.from('articoli')
+    .select('id, titolo, slug, estratto, contenuto, pubblicato, seo_titolo, seo_descrizione, seo_og_image, categoria_id')
+    .eq('id', id).single(),
+  supabase.from('categorie').select('id, nome').in('tipo', ['blog','both']).order('nome'),
+  supabase.from('tag').select('id, nome').in('tipo', ['blog','both']).order('nome'),
+]);
+
+if (fetchErr || !articolo) return Astro.redirect('/admin/blog');
+
+// Tag già associati all'articolo
+const { data: tagArticolo } = await supabase
+  .from('articoli_tag').select('tag_id').eq('articolo_id', id);
+const tagArticoloIds = new Set((tagArticolo ?? []).map((t: any) => t.tag_id));
+
+const contenutoEsistente = articolo.contenuto ?? '';
+const estrattoEsistente  = articolo.estratto  ?? '';
+const titoloEsistente    = articolo.titolo    ?? '';
+const pubEsistente       = articolo.pubblicato ?? false;
+---
+
+<AdminLayout title={`Modifica: ${articolo.titolo}`} activeNav="blog">
+
+  <div class="mb-6 flex items-center gap-3">
+    <a href="/admin/blog"
+      class="text-xs uppercase tracking-widest transition-colors"
+      style="color: var(--text-muted);"
+      onmouseover="this.style.color='var(--gold)'" onmouseout="this.style.color='var(--text-muted)'">
+      ← Torna al blog
+    </a>
+  </div>
+
+  {successMsg && (
+    <div class="mb-6 rounded-xl border border-green-600/40 bg-green-600/10 px-5 py-3 text-sm text-green-400">{successMsg}</div>
+  )}
+  {errorMsg && (
+    <div class="mb-6 rounded-xl border border-red-600/40 bg-red-600/10 px-5 py-3 text-sm text-red-400">{errorMsg}</div>
+  )}
+
+  <section class="rounded-2xl border p-8" style="border-color: var(--border); background-color: color-mix(in srgb, var(--surface) 40%, transparent);">
+    <form method="POST" enctype="multipart/form-data" class="space-y-5">
+
+      <div>
+        <label class="mb-1.5 block text-xs font-semibold uppercase tracking-widest" style="color: var(--text-muted);">Titolo *</label>
+        <input
+          type="text"
+          name="titolo"
+          required
+          value={titoloEsistente}
+          class="auth-input w-full"
+          id="titolo-input"
+        />
+        <p class="mt-1 text-xs" style="color:var(--text-muted);">
+          URL attuale: <a href={`/blog/${articolo.slug}`} target="_blank" class="font-mono" style="color:var(--gold);">/blog/{articolo.slug}</a>
+        </p>
+      </div>
+
+      <div>
+        <label class="mb-1.5 block text-xs font-semibold uppercase tracking-widest" style="color: var(--text-muted);">Estratto / Anteprima</label>
+        <textarea
+          name="estratto"
+          rows="2"
+          class="auth-input w-full resize-y"
+        >{estrattoEsistente}</textarea>
+      </div>
+
+      <div>
+        <label class="mb-1.5 block text-xs font-semibold uppercase tracking-widest" style="color: var(--text-muted);">Contenuto *</label>
+        <div id="editor-contenuto" style="min-height: 360px;"></div>
+        <input type="hidden" name="contenuto" id="contenuto-hidden" />
+      </div>
+
+      <!-- Categoria -->
+      <div class="grid gap-5 sm:grid-cols-2">
+        <div>
+          <label class="mb-1.5 block text-xs font-semibold uppercase tracking-widest" style="color:var(--text-muted);">Categoria</label>
+          <select name="categoria_id" class="auth-input w-full">
+            <option value="">— Nessuna categoria —</option>
+            {(categorie ?? []).map((c: any) => (
+              <option value={c.id} selected={articolo.categoria_id === c.id}>{c.nome}</option>
+            ))}
+          </select>
+        </div>
+        <div>
+          <label class="mb-1.5 block text-xs font-semibold uppercase tracking-widest" style="color:var(--text-muted);">Tag</label>
+          <div class="flex flex-wrap gap-2 rounded-xl border p-3" style="border-color:var(--border); background-color:var(--bg);">
+            {(tagDisponibili ?? []).map((t: any) => (
+              <label class="flex cursor-pointer items-center gap-1.5 rounded-full border px-2.5 py-1 text-xs transition-colors"
+                style={`border-color:${tagArticoloIds.has(t.id) ? 'var(--gold)' : 'var(--border)'}; color:${tagArticoloIds.has(t.id) ? 'var(--gold)' : 'var(--text-muted)'};`}
+                id={`tag-lbl-${t.id}`}>
+                <input type="checkbox" name="tag_ids" value={t.id}
+                  checked={tagArticoloIds.has(t.id)} class="sr-only"
+                  onchange={`var l=document.getElementById('tag-lbl-${t.id}');l.style.borderColor=this.checked?'var(--gold)':'var(--border)';l.style.color=this.checked?'var(--gold)':'var(--text-muted)';`} />
+                {t.nome}
+              </label>
+            ))}
+            {(tagDisponibili ?? []).length === 0 && (
+              <p class="text-xs" style="color:var(--text-muted);">Nessun tag. <a href="/admin/categorie" style="color:var(--gold);">Creane uno →</a></p>
+            )}
+          </div>
+        </div>
+      </div>
+
+      <div class="flex items-center gap-3">
+        <label class="relative inline-flex cursor-pointer items-center">
+          <input type="checkbox" name="pubblicato" id="pubblicato-toggle" class="sr-only peer"
+            checked={pubEsistente} />
+          <div class="h-6 w-11 rounded-full transition-all duration-200 peer-checked:bg-[color:var(--gold)]"
+            style="background-color: var(--border);"></div>
+          <div class="absolute left-1 top-1 h-4 w-4 rounded-full bg-white transition-transform duration-200 peer-checked:translate-x-5"></div>
+        </label>
+        <label for="pubblicato-toggle" class="cursor-pointer text-sm" style="color: var(--text);">
+          Articolo pubblicato
+        </label>
+      </div>
+
+      <SeoFields
+        slug={articolo.slug ?? ''}
+        slugPrefix="/blog/"
+        seoTitolo={articolo.seo_titolo ?? ''}
+        seoDescrizione={articolo.seo_descrizione ?? ''}
+        seoOgImage={articolo.seo_og_image ?? ''}
+      />
+
+      <div class="flex gap-3 pt-2">
+        <button type="submit" class="auth-submit">Salva modifiche</button>
+      </div>
+    </form>
+  </section>
+
+</AdminLayout>
+
+<link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/quill@2/dist/quill.snow.css" />
+<script is:inline src="https://cdn.jsdelivr.net/npm/quill@2/dist/quill.js"></script>
+<script is:inline define:vars={{ contenutoEsistente }}>
+(function () {
+  const toolbarOptions = [
+    [{ header: [1, 2, 3, false] }],
+    [{ size: ['small', false, 'large', 'huge'] }],
+    ['bold', 'italic', 'underline', 'strike'],
+    [{ color: [] }, { background: [] }],
+    [{ list: 'ordered' }, { list: 'bullet' }],
+    ['blockquote', 'link'],
+    [{ align: [] }],
+    ['clean'],
+  ];
+
+  const quill = new Quill('#editor-contenuto', {
+    theme: 'snow',
+    modules: { toolbar: toolbarOptions },
+  });
+
+  // Carica contenuto esistente
+  if (contenutoEsistente) {
+    quill.root.innerHTML = contenutoEsistente;
+  }
+
+  const form = document.querySelector('form');
+  if (form) {
+    form.addEventListener('submit', (e) => {
+      const html   = quill.root.innerHTML;
+      const isEmpty = html === '<p><br></p>' || html.trim() === '';
+      if (isEmpty) { e.preventDefault(); quill.root.focus(); return; }
+      const hidden = document.getElementById('contenuto-hidden');
+      if (hidden) hidden.value = html;
+    });
+  }
+})();
+</script>

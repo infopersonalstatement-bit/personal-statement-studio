@@ -1,0 +1,57 @@
+---
+import BaseLayout from '../../../layouts/BaseLayout.astro';
+import PageHero from '../../../components/common/PageHero.astro';
+
+const { slug } = Astro.params;
+
+const { data: tag } = await Astro.locals.supabase
+  .from('tag').select('id, nome, slug').eq('slug', slug).in('tipo', ['blog','both']).maybeSingle();
+
+if (!tag) return Astro.redirect('/blog');
+
+// Articoli con questo tag via join
+const { data: articoliTag } = await Astro.locals.supabase
+  .from('articoli_tag')
+  .select('articoli(id, titolo, slug, estratto, created_at, pubblicato)')
+  .eq('tag_id', tag.id);
+
+const articoli = (articoliTag ?? [])
+  .map((r: any) => r.articoli)
+  .filter((a: any) => a?.pubblicato)
+  .sort((a: any, b: any) => new Date(b.created_at).getTime() - new Date(a.created_at).getTime());
+---
+
+<BaseLayout
+  title={`#${tag.nome} — Blog`}
+  description={`Articoli sul tema "${tag.nome}".`}
+>
+  <PageHero eyebrow="Blog · Tag" subtitle={`Articoli sul tema "${tag.nome}"`}>
+    #{tag.nome}
+  </PageHero>
+
+  <section class="mx-auto max-w-4xl px-6 py-10">
+    {articoli.length > 0 ? (
+      <div class="space-y-6">
+        {articoli.map((a: any) => (
+          <a href={`/blog/${a.slug}`}
+            class="group flex flex-col rounded-2xl border p-7 transition-all duration-300"
+            style="border-color:var(--border); background-color:var(--bg-card);"
+            onmouseover="this.style.borderColor='var(--gold)'; this.style.transform='translateY(-2px)'"
+            onmouseout="this.style.borderColor='var(--border)'; this.style.transform='translateY(0)'">
+            <time class="mb-3 text-[10px] font-semibold uppercase tracking-[0.25em]" style="color:var(--gold);" datetime={a.created_at}>
+              {new Date(a.created_at).toLocaleDateString('it-IT', { day: '2-digit', month: 'long', year: 'numeric' })}
+            </time>
+            <h2 class="font-display mb-3 text-2xl font-light leading-snug" style="color:var(--text);">{a.titolo}</h2>
+            {a.estratto && <p class="mb-5 flex-1 text-sm leading-relaxed line-clamp-2" style="color:var(--text-muted);">{a.estratto}</p>}
+            <span class="self-start text-xs font-semibold uppercase tracking-widest" style="color:var(--text-muted);">Leggi l'articolo →</span>
+          </a>
+        ))}
+      </div>
+    ) : (
+      <div class="py-20 text-center">
+        <p class="font-display text-2xl font-light mb-3" style="color:var(--text);">Nessun articolo con questo tag.</p>
+        <a href="/blog" class="text-sm" style="color:var(--gold);">← Torna al blog</a>
+      </div>
+    )}
+  </section>
+</BaseLayout>

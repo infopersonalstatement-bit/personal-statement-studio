@@ -1,0 +1,330 @@
+---
+import AdminLayout from '../../layouts/AdminLayout.astro';
+import { createSupabaseAdminClient } from '../../lib/supabase/server';
+import SeoFields from '../../components/admin/SeoFields.astro';
+import { processOgImage } from '../../lib/og-image';
+
+const supabase = createSupabaseAdminClient();
+
+let successMsg = '';
+let errorMsg = '';
+
+function slugify(text: string) {
+  return text
+    .toLowerCase()
+    .replace(/[àáâãäå]/g, 'a')
+    .replace(/[èéêë]/g, 'e')
+    .replace(/[ìíîï]/g, 'i')
+    .replace(/[òóôõö]/g, 'o')
+    .replace(/[ùúûü]/g, 'u')
+    .replace(/ç/g, 'c')
+    .replace(/ñ/g, 'n')
+    .replace(/[^a-z0-9]+/g, '-')
+    .replace(/^-+|-+$/g, '');
+}
+
+// ─── Gestione form POST ───────────────────────────────────────────────────────
+if (Astro.request.method === 'POST') {
+  try {
+    const formData = await Astro.request.formData();
+    const action = formData.get('action') as string;
+
+    if (action === 'crea') {
+      const titolo         = (formData.get('titolo')         as string)?.trim();
+      const estratto       = (formData.get('estratto')       as string)?.trim();
+      const contenuto      = (formData.get('contenuto')      as string)?.trim();
+      const pubblicato     = formData.get('pubblicato') === 'on';
+      const seo_titolo      = (formData.get('seo_titolo')      as string)?.trim() || null;
+      const seo_descrizione = (formData.get('seo_descrizione') as string)?.trim() || null;
+      const seo_og_image    = await processOgImage(formData);
+
+      if (!titolo || !contenuto) {
+        errorMsg = 'Titolo e contenuto sono obbligatori.';
+      } else {
+        let slug = slugify(titolo);
+
+        // Assicura unicità dello slug
+        const { data: existing } = await supabase
+          .from('articoli')
+          .select('slug')
+          .like('slug', `${slug}%`);
+
+        if (existing && existing.length > 0) {
+          slug = `${slug}-${Date.now()}`;
+        }
+
+        const { error: dbErr } = await supabase.from('articoli').insert({
+          titolo,
+          slug,
+          estratto: estratto || null,
+          contenuto,
+          pubblicato,
+          seo_titolo,
+          seo_descrizione,
+          seo_og_image,
+        });
+
+        if (dbErr) {
+          errorMsg = `Errore salvataggio: ${dbErr.message}`;
+        } else {
+          successMsg = `Articolo "${titolo}" ${pubblicato ? 'pubblicato' : 'salvato come bozza'} con successo!`;
+        }
+      }
+    }
+
+    if (action === 'toggle-pubblica') {
+      const id      = formData.get('id') as string;
+      const attuale = formData.get('attuale') === 'true';
+      const { error: dbErr } = await supabase
+        .from('articoli')
+        .update({ pubblicato: !attuale })
+        .eq('id', id);
+      if (dbErr) errorMsg = `Errore: ${dbErr.message}`;
+      else successMsg = !attuale ? 'Articolo pubblicato.' : 'Articolo rimesso in bozza.';
+    }
+
+    if (action === 'elimina') {
+      const id = formData.get('id') as string;
+      const { error: dbErr } = await supabase.from('articoli').delete().eq('id', id);
+      if (dbErr) errorMsg = `Errore eliminazione: ${dbErr.message}`;
+      else successMsg = 'Articolo eliminato.';
+    }
+  } catch (e: any) {
+    errorMsg = `Errore imprevisto: ${e.message}`;
+  }
+}
+
+// ─── Lista articoli ───────────────────────────────────────────────────────────
+const { data: articoli, error: listErr } = await supabase
+  .from('articoli')
+  .select('id, titolo, slug, estratto, pubblicato, created_at')
+  .order('created_at', { ascending: false });
+---
+
+<AdminLayout title="Blog" activeNav="blog">
+
+  <!-- Feedback -->
+  {successMsg && (
+    <div class="mb-6 rounded-xl border border-green-600/40 bg-green-600/10 px-5 py-3 text-sm text-green-400">{successMsg}</div>
+  )}
+  {errorMsg && (
+    <div class="mb-6 rounded-xl border border-red-600/40 bg-red-600/10 px-5 py-3 text-sm text-red-400">{errorMsg}</div>
+  )}
+
+  <!-- Form crea nuovo articolo -->
+  <section class="mb-14 rounded-2xl border p-8" style="border-color: var(--border); background-color: color-mix(in srgb, var(--surface) 40%, transparent);">
+    <h2 class="mb-6 font-display text-2xl font-light" style="color: var(--text);">Scrivi un nuovo articolo</h2>
+    <form method="POST" enctype="multipart/form-data" class="space-y-5">
+      <input type="hidden" name="action" value="crea" />
+
+      <div>
+        <label class="mb-1.5 block text-xs font-semibold uppercase tracking-widest" style="color: var(--text-muted);">
+          Titolo *
+        </label>
+        <input
+          type="text"
+          name="titolo"
+          required
+          placeholder="Es. Come ritrovare la chiarezza nei momenti difficili"
+          class="auth-input w-full"
+          id="titolo-input"
+        />
+        <p class="mt-1 text-xs" style="color:var(--text-muted);">
+          Slug: <span id="slug-preview" class="font-mono" style="color:var(--gold);">—</span>
+        </p>
+      </div>
+
+      <div>
+        <label class="mb-1.5 block text-xs font-semibold uppercase tracking-widest" style="color: var(--text-muted);">
+          Estratto / Anteprima
+        </label>
+        <textarea
+          name="estratto"
+          rows="2"
+          placeholder="Una breve descrizione che apparirà nell'elenco del blog…"
+          class="auth-input w-full resize-y"
+        ></textarea>
+      </div>
+
+      <div>
+        <label class="mb-1.5 block text-xs font-semibold uppercase tracking-widest" style="color: var(--text-muted);">
+          Contenuto *
+        </label>
+        <!-- Editor WYSIWYG -->
+        <div id="editor-contenuto" style="min-height: 360px;"></div>
+        <input type="hidden" name="contenuto" id="contenuto-hidden" />
+      </div>
+
+      <div class="flex items-center gap-3">
+        <label class="relative inline-flex cursor-pointer items-center">
+          <input type="checkbox" name="pubblicato" id="pubblicato-toggle" class="sr-only peer" />
+          <div
+            class="h-6 w-11 rounded-full transition-all duration-200 peer-checked:bg-[color:var(--gold)]"
+            style="background-color: var(--border);"
+          ></div>
+          <div class="absolute left-1 top-1 h-4 w-4 rounded-full bg-white transition-transform duration-200 peer-checked:translate-x-5"></div>
+        </label>
+        <label for="pubblicato-toggle" class="cursor-pointer text-sm" style="color: var(--text);">
+          Pubblica subito (altrimenti viene salvato come bozza)
+        </label>
+      </div>
+
+      <SeoFields slugPrefix="/blog/" />
+
+      <div class="pt-2">
+        <button type="submit" class="auth-submit">
+          Salva articolo
+        </button>
+      </div>
+    </form>
+  </section>
+
+  <!-- Lista articoli esistenti -->
+  <section>
+    <h2 class="mb-5 font-display text-2xl font-light" style="color: var(--text);">Articoli esistenti</h2>
+
+    {listErr && <p class="text-sm text-red-400">Errore caricamento: {listErr.message}</p>}
+
+    {articoli && articoli.length > 0 ? (
+      <div class="space-y-4">
+        {articoli.map((a: any) => (
+          <div
+            class="flex flex-col gap-4 rounded-2xl border p-5 sm:flex-row sm:items-start sm:justify-between transition-all duration-200"
+            style="border-color: var(--border); background-color: color-mix(in srgb, var(--surface) 30%, transparent);"
+          >
+            <div class="flex-1 min-w-0">
+              <div class="flex flex-wrap items-center gap-2 mb-1">
+                <span
+                  class="rounded-full px-2 py-0.5 text-[10px] font-semibold uppercase tracking-widest"
+                  style={a.pubblicato
+                    ? 'background-color: color-mix(in srgb, var(--gold) 15%, transparent); color: var(--gold);'
+                    : 'background-color: color-mix(in srgb, var(--border) 50%, transparent); color: var(--text-muted);'}
+                >
+                  {a.pubblicato ? 'Pubblicato' : 'Bozza'}
+                </span>
+                <span class="text-xs" style="color:var(--text-muted);">
+                  {new Date(a.created_at).toLocaleDateString('it-IT', { day: '2-digit', month: 'short', year: 'numeric' })}
+                </span>
+              </div>
+              <p class="font-display text-lg font-light truncate" style="color: var(--text);">{a.titolo}</p>
+              {a.estratto && (
+                <p class="mt-0.5 text-sm line-clamp-1" style="color: var(--text-muted);">{a.estratto}</p>
+              )}
+              <p class="mt-0.5 text-xs font-mono" style="color:var(--text-muted);">/blog/{a.slug}</p>
+            </div>
+            <div class="flex flex-shrink-0 flex-wrap gap-2">
+              <!-- Modifica -->
+              <a
+                href={`/admin/blog/${a.id}`}
+                class="rounded-full border px-3 py-1 text-xs transition-all duration-200"
+                style="border-color: var(--border); color: var(--text-muted);"
+                onmouseover="this.style.borderColor='var(--gold)'; this.style.color='var(--gold)'"
+                onmouseout="this.style.borderColor='var(--border)'; this.style.color='var(--text-muted)'"
+              >
+                Modifica
+              </a>
+              <!-- Toggle pubblica/bozza -->
+              <form method="POST">
+                <input type="hidden" name="action" value="toggle-pubblica" />
+                <input type="hidden" name="id" value={a.id} />
+                <input type="hidden" name="attuale" value={String(a.pubblicato)} />
+                <button
+                  type="submit"
+                  class="rounded-full border px-3 py-1 text-xs transition-all duration-200"
+                  style="border-color: var(--border); color: var(--text-muted);"
+                  onmouseover="this.style.borderColor='var(--gold)'; this.style.color='var(--gold)'"
+                  onmouseout="this.style.borderColor='var(--border)'; this.style.color='var(--text-muted)'"
+                >
+                  {a.pubblicato ? 'Bozza' : 'Pubblica'}
+                </button>
+              </form>
+              <!-- Elimina -->
+              <form method="POST" onsubmit="return confirm('Eliminare definitivamente questo articolo?')">
+                <input type="hidden" name="action" value="elimina" />
+                <input type="hidden" name="id" value={a.id} />
+                <button
+                  type="submit"
+                  class="rounded-full border px-3 py-1 text-xs transition-all duration-200"
+                  style="border-color: var(--border); color: var(--text-muted);"
+                  onmouseover="this.style.borderColor='#ef4444'; this.style.color='#ef4444'"
+                  onmouseout="this.style.borderColor='var(--border)'; this.style.color='var(--text-muted)'"
+                >
+                  Elimina
+                </button>
+              </form>
+            </div>
+          </div>
+        ))}
+      </div>
+    ) : (
+      <p class="text-sm" style="color: var(--text-muted);">Nessun articolo ancora scritto.</p>
+    )}
+  </section>
+
+</AdminLayout>
+
+<script>
+  function slugify(text: string) {
+    return text
+      .toLowerCase()
+      .replace(/[àáâãäå]/g, 'a')
+      .replace(/[èéêë]/g, 'e')
+      .replace(/[ìíîï]/g, 'i')
+      .replace(/[òóôõö]/g, 'o')
+      .replace(/[ùúûü]/g, 'u')
+      .replace(/ç/g, 'c')
+      .replace(/ñ/g, 'n')
+      .replace(/[^a-z0-9]+/g, '-')
+      .replace(/^-+|-+$/g, '');
+  }
+  const titoloInput = document.getElementById('titolo-input') as HTMLInputElement;
+  const slugPreview = document.getElementById('slug-preview') as HTMLSpanElement;
+  if (titoloInput && slugPreview) {
+    titoloInput.addEventListener('input', () => {
+      slugPreview.textContent = slugify(titoloInput.value) || '—';
+    });
+  }
+</script>
+
+<!-- Quill WYSIWYG -->
+<link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/quill@2/dist/quill.snow.css" />
+<script is:inline src="https://cdn.jsdelivr.net/npm/quill@2/dist/quill.js"></script>
+<script is:inline>
+(function () {
+  const toolbarOptions = [
+    [{ header: [1, 2, 3, false] }],
+    [{ size: ['small', false, 'large', 'huge'] }],
+    ['bold', 'italic', 'underline', 'strike'],
+    [{ color: [] }, { background: [] }],
+    [{ list: 'ordered' }, { list: 'bullet' }],
+    ['blockquote', 'link'],
+    [{ align: [] }],
+    ['clean'],
+  ];
+
+  const quill = new Quill('#editor-contenuto', {
+    theme: 'snow',
+    placeholder: 'Inizia a scrivere il tuo articolo…',
+    modules: { toolbar: toolbarOptions },
+  });
+
+  // Valida e copia HTML nell'input nascosto prima dell'invio
+  const form = document.querySelector('form[method="POST"]:not([action])') ?? document.querySelector('form');
+  if (form) {
+    form.addEventListener('submit', (e) => {
+      const html = quill.root.innerHTML;
+      const isEmpty = html === '<p><br></p>' || html.trim() === '';
+      const hidden = document.getElementById('contenuto-hidden');
+
+      if (isEmpty) {
+        e.preventDefault();
+        quill.root.style.border = '1px solid #ef4444';
+        quill.root.focus();
+        return;
+      }
+      if (hidden) hidden.value = html;
+    });
+  }
+})();
+</script>
+

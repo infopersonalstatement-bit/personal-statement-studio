@@ -1,0 +1,205 @@
+---
+import DashboardLayout from '../../layouts/DashboardLayout.astro';
+
+const user = Astro.locals.user;
+if (!user) return Astro.redirect('/auth/login');
+
+// Leggi profilo esistente
+const { data: profilo } = await Astro.locals.supabase
+  .from('utenti')
+  .select('nome, telefono, lingua')
+  .eq('id', user.id)
+  .maybeSingle();
+
+const lingue = [
+  { value: 'it', label: '🇮🇹 Italiano' },
+  { value: 'en', label: '🇬🇧 English' },
+  { value: 'es', label: '🇪🇸 Español' },
+  { value: 'fr', label: '🇫🇷 Français' },
+  { value: 'de', label: '🇩🇪 Deutsch' },
+];
+---
+
+<DashboardLayout title="Impostazioni" activeNav="impostazioni">
+
+  <div class="mx-auto max-w-xl space-y-10">
+
+    <!-- ── Profilo ─────────────────────────────────────── -->
+    <section>
+      <h2 class="mb-6 text-xs font-semibold uppercase tracking-[0.25em]" style="color: var(--gold);">
+        Dati personali
+      </h2>
+
+      <form id="form-profilo" class="space-y-5">
+
+        <!-- Email (read-only) -->
+        <div>
+          <label class="settings-label">Email</label>
+          <input
+            type="email"
+            value={user.email}
+            disabled
+            class="settings-input opacity-50 cursor-not-allowed"
+          />
+          <p class="mt-1 text-[11px]" style="color: var(--text-muted);">
+            L'email è legata al tuo account e non può essere modificata qui.
+          </p>
+        </div>
+
+        <!-- Nome -->
+        <div>
+          <label class="settings-label" for="nome">Nome e cognome</label>
+          <input
+            type="text"
+            id="nome"
+            name="nome"
+            value={profilo?.nome ?? ''}
+            placeholder="Come preferisci essere chiamato/a"
+            maxlength="120"
+            class="settings-input"
+          />
+        </div>
+
+        <!-- Telefono -->
+        <div>
+          <label class="settings-label" for="telefono">Numero di telefono</label>
+          <input
+            type="tel"
+            id="telefono"
+            name="telefono"
+            value={profilo?.telefono ?? ''}
+            placeholder="+39 000 000 0000"
+            maxlength="30"
+            class="settings-input"
+          />
+        </div>
+
+        <!-- Lingua preferita -->
+        <div>
+          <label class="settings-label" for="lingua">Lingua preferita</label>
+          <select id="lingua" name="lingua" class="settings-input">
+            {lingue.map(l => (
+              <option
+                value={l.value}
+                selected={l.value === (profilo?.lingua ?? 'it')}
+              >
+                {l.label}
+              </option>
+            ))}
+          </select>
+          <p class="mt-1 text-[11px]" style="color: var(--text-muted);">
+            Usata per le comunicazioni future e l'interfaccia multilingua.
+          </p>
+        </div>
+
+        <!-- Feedback -->
+        <div id="feedback" class="hidden rounded-xl px-4 py-3 text-sm"></div>
+
+        <!-- Submit -->
+        <div class="pt-2">
+          <button type="submit" id="btn-salva" class="cta-main">
+            Salva modifiche
+          </button>
+        </div>
+
+      </form>
+    </section>
+
+    <!-- ── Account ────────────────────────────────────── -->
+    <section class="border-t pt-8" style="border-color: var(--border);">
+      <h2 class="mb-6 text-xs font-semibold uppercase tracking-[0.25em]" style="color: var(--gold);">
+        Account
+      </h2>
+
+      <div class="rounded-2xl border p-5 space-y-1" style="border-color: var(--border); background-color: var(--bg-card);">
+        <p class="text-sm font-medium" style="color: var(--text);">Disconnetti</p>
+        <p class="text-xs" style="color: var(--text-muted);">Termina la sessione su questo dispositivo.</p>
+        <div class="pt-3">
+          <form action="/api/auth/signout" method="POST">
+            <button
+              type="submit"
+              class="rounded-full border px-4 py-1.5 text-xs font-semibold uppercase tracking-widest transition-all duration-200"
+              style="border-color: var(--border); color: var(--text-muted);"
+              onmouseover="this.style.borderColor='var(--gold)'; this.style.color='var(--gold)'"
+              onmouseout="this.style.borderColor='var(--border)'; this.style.color='var(--text-muted)'"
+            >
+              Esci dall'account
+            </button>
+          </form>
+        </div>
+      </div>
+    </section>
+
+  </div>
+
+</DashboardLayout>
+
+<style is:global>
+.settings-label {
+  display: block;
+  margin-bottom: .4rem;
+  font-size: .7rem;
+  font-weight: 600;
+  text-transform: uppercase;
+  letter-spacing: .12em;
+  color: var(--text-muted);
+}
+.settings-input {
+  width: 100%;
+  padding: .65rem .9rem;
+  border-radius: .75rem;
+  border: 1px solid var(--border);
+  background-color: var(--bg-card);
+  color: var(--text);
+  font-size: .875rem;
+  transition: border-color .2s;
+  outline: none;
+}
+.settings-input:focus {
+  border-color: var(--gold);
+}
+</style>
+
+<script>
+const form     = document.getElementById('form-profilo') as HTMLFormElement;
+const feedback = document.getElementById('feedback')!;
+const btnSalva = document.getElementById('btn-salva') as HTMLButtonElement;
+
+form?.addEventListener('submit', async (e) => {
+  e.preventDefault();
+  btnSalva.disabled = true;
+  btnSalva.textContent = 'Salvataggio…';
+  feedback.className = 'hidden';
+
+  const data = {
+    nome:     (form.querySelector('#nome')     as HTMLInputElement).value,
+    telefono: (form.querySelector('#telefono') as HTMLInputElement).value,
+    lingua:   (form.querySelector('#lingua')   as HTMLSelectElement).value,
+  };
+
+  try {
+    const res = await fetch('/api/profilo', {
+      method:  'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body:    JSON.stringify(data),
+    });
+    const json = await res.json();
+
+    if (res.ok) {
+      feedback.textContent = '✓ Modifiche salvate con successo.';
+      feedback.className   = 'rounded-xl px-4 py-3 text-sm';
+      feedback.style.cssText = 'background-color: color-mix(in srgb, #4ade80 12%, var(--bg-card)); color: #4ade80; border: 1px solid #4ade8040;';
+    } else {
+      throw new Error(json.error ?? 'Errore sconosciuto');
+    }
+  } catch (err: any) {
+    feedback.textContent = '✗ ' + (err.message ?? 'Errore durante il salvataggio.');
+    feedback.className   = 'rounded-xl px-4 py-3 text-sm';
+    feedback.style.cssText = 'background-color: color-mix(in srgb, #f87171 12%, var(--bg-card)); color: #f87171; border: 1px solid #f8717140;';
+  } finally {
+    btnSalva.disabled = false;
+    btnSalva.textContent = 'Salva modifiche';
+    setTimeout(() => { feedback.className = 'hidden'; }, 5000);
+  }
+});
+</script>

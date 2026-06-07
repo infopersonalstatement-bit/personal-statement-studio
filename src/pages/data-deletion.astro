@@ -1,0 +1,103 @@
+---
+import BaseLayout from '../layouts/BaseLayout.astro';
+---
+
+<BaseLayout
+  title="Cancellazione Dati"
+  description="Istruzioni per richiedere la cancellazione dei tuoi dati personali da Personal Statement Studio."
+>
+  <article class="mx-auto max-w-2xl px-6 py-16">
+
+    <h1 class="font-display mb-2 text-4xl font-light" style="color: var(--text);">
+      Cancellazione dei Dati
+    </h1>
+    <p class="mb-12 text-sm" style="color: var(--text-muted);">
+      Istruzioni per la rimozione dei tuoi dati personali
+    </p>
+
+    <div class="space-y-10 text-sm leading-relaxed" style="color: var(--text-muted);">
+
+      <section>
+        <h2 class="mb-3 text-base font-semibold uppercase tracking-wider" style="color: var(--text);">Cosa puoi richiedere</h2>
+        <p>
+          Ai sensi dell'art. 17 del Regolamento UE 2016/679 (GDPR), hai il diritto di richiedere la cancellazione di tutti i tuoi dati personali presenti nei sistemi di Personal Statement Studio, inclusi:
+        </p>
+        <ul class="mt-3 list-disc space-y-1 pl-5">
+          <li>Account e credenziali di accesso</li>
+          <li>Storico acquisti e download</li>
+          <li>Dati del profilo (email, nome)</li>
+          <li>Dati di sessione e navigazione</li>
+        </ul>
+      </section>
+
+      <section>
+        <h2 class="mb-3 text-base font-semibold uppercase tracking-wider" style="color: var(--text);">Come fare richiesta</h2>
+
+        <div
+          class="rounded-2xl border p-6"
+          style="border-color: var(--gold); background-color: color-mix(in srgb, var(--gold) 5%, var(--bg-card));"
+        >
+          <p class="mb-1 text-xs font-semibold uppercase tracking-widest" style="color: var(--gold);">Metodo 1 — Email</p>
+          <p class="mt-2">
+            Invia una email a
+            <a href="mailto:privacy@personalstatementstudio.com" class="font-medium" style="color: var(--gold);">
+              privacy@personalstatementstudio.com
+            </a>
+            con oggetto: <strong style="color: var(--text);">"Richiesta cancellazione dati"</strong>
+          </p>
+          <p class="mt-2">
+            Includi l'indirizzo email associato al tuo account e, se hai usato il login social (Facebook/Google), specifica quale provider hai utilizzato.
+          </p>
+        </div>
+
+        <div
+          class="mt-4 rounded-2xl border p-6"
+          style="border-color: var(--border); background-color: var(--bg-card);"
+        >
+          <p class="mb-1 text-xs font-semibold uppercase tracking-widest" style="color: var(--text-muted);">Metodo 2 — Dall'account</p>
+          <p class="mt-2">
+            Se sei registrato, puoi accedere alla tua <a href="/dashboard" style="color: var(--gold);">area riservata</a> e richiedere la cancellazione dell'account dalla sezione impostazioni del profilo.
+          </p>
+        </div>
+      </section>
+
+      <section>
+        <h2 class="mb-3 text-base font-semibold uppercase tracking-wider" style="color: var(--text);">Tempi di risposta</h2>
+        <p>
+          Daremo riscontro alla tua richiesta entro <strong style="color: var(--text);">30 giorni</strong> dalla ricezione. La cancellazione sarà completata entro lo stesso termine, salvo obblighi di conservazione previsti dalla legge (es. dati fiscali, che devono essere conservati per 10 anni).
+        </p>
+      </section>
+
+      <section>
+        <h2 class="mb-3 text-base font-semibold uppercase tracking-wider" style="color: var(--text);">Cosa succede dopo la cancellazione</h2>
+        <ul class="list-disc space-y-1 pl-5">
+          <li>Il tuo account verrà disattivato e rimosso definitivamente</li>
+          <li>Non potrai più accedere ai prodotti acquistati</li>
+          <li>I dati di acquisto vengono anonimizzati (non eliminati) per rispettare gli obblighi fiscali</li>
+          <li>I dati condivisi con provider terzi (Google, Facebook) devono essere eliminati separatamente tramite le rispettive piattaforme</li>
+        </ul>
+      </section>
+
+      <section>
+        <h2 class="mb-3 text-base font-semibold uppercase tracking-wider" style="color: var(--text);">Cancellazione tramite Facebook</h2>
+        <p>
+          Se hai creato il tuo account tramite il login Facebook, puoi avviare la cancellazione dei dati direttamente da Facebook:
+          Impostazioni Facebook → App e siti web → Personal Statement Studio → Rimuovi.
+          Questo eliminerà l'autorizzazione concessa alla nostra app. Per la cancellazione completa dei dati dal nostro database, invia comunque una email come indicato sopra.
+        </p>
+      </section>
+
+    </div>
+
+    <div class="mt-16 border-t pt-8 flex gap-6" style="border-color: var(--border);">
+      <a href="/privacy" class="text-xs uppercase tracking-widest transition-colors" style="color: var(--text-muted);"
+         onmouseover="this.style.color='var(--gold)'" onmouseout="this.style.color='var(--text-muted)'">
+        Privacy Policy
+      </a>
+      <a href="/" class="text-xs uppercase tracking-widest transition-colors" style="color: var(--gold);">
+        ← Home
+      </a>
+    </div>
+
+  </article>
+</BaseLayout>

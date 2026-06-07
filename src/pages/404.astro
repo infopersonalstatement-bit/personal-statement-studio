@@ -1,0 +1,53 @@
+---
+import BaseLayout from '../layouts/BaseLayout.astro';
+---
+
+<BaseLayout
+  title="Pagina non trovata"
+  description="La pagina che stai cercando non esiste o è stata spostata."
+>
+  <section
+    class="relative flex flex-col items-center justify-center px-6 text-center"
+    style="min-height: 72vh;"
+  >
+    <!-- Sfondo decorativo -->
+    <div
+      class="pointer-events-none absolute inset-0"
+      style="background: radial-gradient(ellipse 70% 60% at 50% 40%, color-mix(in srgb, var(--gold) 8%, transparent) 0%, transparent 70%);"
+    ></div>
+
+    <!-- Numero errore -->
+    <p
+      class="font-display relative select-none font-light leading-none"
+      style="font-size: clamp(7rem, 22vw, 14rem); color: color-mix(in srgb, var(--gold) 18%, transparent); letter-spacing: -.02em;"
+    >
+      404
+    </p>
+
+    <!-- Testo -->
+    <div class="relative -mt-6 max-w-md space-y-4">
+      <div class="flex justify-center">
+        <div class="h-px w-10" style="background-color: var(--gold);"></div>
+      </div>
+
+      <h1
+        class="font-display text-3xl font-light sm:text-4xl"
+        style="color: var(--text);"
+      >
+        Pagina non trovata
+      </h1>
+
+      <p class="text-base leading-relaxed" style="color: var(--text-muted);">
+        La pagina che cerchi non esiste, è stata spostata o l'indirizzo è errato.
+      </p>
+
+      <!-- Link utili -->
+      <div class="flex flex-wrap items-center justify-center gap-3 pt-4">
+        <a href="/" class="cta-main">← Torna alla home</a>
+        <a href="/blog" class="nav-pill">Blog</a>
+        <a href="/shop" class="nav-pill">Prodotti</a>
+        <a href="/manifesto" class="nav-pill">Manifesto</a>
+      </div>
+    </div>
+  </section>
+</BaseLayout>
