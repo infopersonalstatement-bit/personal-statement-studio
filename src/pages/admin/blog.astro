@@ -2,75 +2,19 @@
 import AdminLayout from '../../layouts/AdminLayout.astro';
 import { createSupabaseAdminClient } from '../../lib/supabase/server';
 import SeoFields from '../../components/admin/SeoFields.astro';
-import { processOgImage } from '../../lib/og-image';
 
 const supabase = createSupabaseAdminClient();
 
-let successMsg = '';
+let successMsg = Astro.url.searchParams.get('ok') === '1'
+  ? 'Articolo salvato con successo!'
+  : '';
 let errorMsg = '';
-
-function slugify(text: string) {
-  return text
-    .toLowerCase()
-    .replace(/[àáâãäå]/g, 'a')
-    .replace(/[èéêë]/g, 'e')
-    .replace(/[ìíîï]/g, 'i')
-    .replace(/[òóôõö]/g, 'o')
-    .replace(/[ùúûü]/g, 'u')
-    .replace(/ç/g, 'c')
-    .replace(/ñ/g, 'n')
-    .replace(/[^a-z0-9]+/g, '-')
-    .replace(/^-+|-+$/g, '');
-}
 
 // ─── Gestione form POST ───────────────────────────────────────────────────────
 if (Astro.request.method === 'POST') {
   try {
     const formData = await Astro.request.formData();
     const action = formData.get('action') as string;
-
-    if (action === 'crea') {
-      const titolo         = (formData.get('titolo')         as string)?.trim();
-      const estratto       = (formData.get('estratto')       as string)?.trim();
-      const contenuto      = (formData.get('contenuto')      as string)?.trim();
-      const pubblicato     = formData.get('pubblicato') === 'on';
-      const seo_titolo      = (formData.get('seo_titolo')      as string)?.trim() || null;
-      const seo_descrizione = (formData.get('seo_descrizione') as string)?.trim() || null;
-      const seo_og_image    = await processOgImage(formData);
-
-      if (!titolo || !contenuto) {
-        errorMsg = 'Titolo e contenuto sono obbligatori.';
-      } else {
-        let slug = slugify(titolo);
-
-        // Assicura unicità dello slug
-        const { data: existing } = await supabase
-          .from('articoli')
-          .select('slug')
-          .like('slug', `${slug}%`);
-
-        if (existing && existing.length > 0) {
-          slug = `${slug}-${Date.now()}`;
-        }
-
-        const { error: dbErr } = await supabase.from('articoli').insert({
-          titolo,
-          slug,
-          estratto: estratto || null,
-          contenuto,
-          pubblicato,
-          seo_titolo,
-          seo_descrizione,
-          seo_og_image,
-        });
-
-        if (dbErr) {
-          errorMsg = `Errore salvataggio: ${dbErr.message}`;
-        } else {
-          successMsg = `Articolo "${titolo}" ${pubblicato ? 'pubblicato' : 'salvato come bozza'} con successo!`;
-        }
-      }
-    }
 
     if (action === 'toggle-pubblica') {
       const id      = formData.get('id') as string;
@@ -114,8 +58,7 @@ const { data: articoli, error: listErr } = await supabase
   <!-- Form crea nuovo articolo -->
   <section class="mb-14 rounded-2xl border p-8" style="border-color: var(--border); background-color: color-mix(in srgb, var(--surface) 40%, transparent);">
     <h2 class="mb-6 font-display text-2xl font-light" style="color: var(--text);">Scrivi un nuovo articolo</h2>
-    <form method="POST" enctype="multipart/form-data" class="space-y-5">
-      <input type="hidden" name="action" value="crea" />
+    <form id="form-crea-articolo" class="space-y-5">
 
       <div>
         <label class="mb-1.5 block text-xs font-semibold uppercase tracking-widest" style="color: var(--text-muted);">
@@ -152,7 +95,6 @@ const { data: articoli, error: listErr } = await supabase
         </label>
         <!-- Editor WYSIWYG -->
         <div id="editor-contenuto" style="min-height: 360px;"></div>
-        <input type="hidden" name="contenuto" id="contenuto-hidden" />
       </div>
 
       <div class="flex items-center gap-3">
@@ -172,9 +114,10 @@ const { data: articoli, error: listErr } = await supabase
       <SeoFields slugPrefix="/blog/" />
 
       <div class="pt-2">
-        <button type="submit" class="auth-submit">
+        <button type="submit" id="btn-salva-articolo" class="auth-submit">
           Salva articolo
         </button>
+        <p id="crea-articolo-msg" class="mt-3 hidden text-sm"></p>
       </div>
     </form>
   </section>
@@ -308,21 +251,74 @@ const { data: articoli, error: listErr } = await supabase
     modules: { toolbar: toolbarOptions },
   });
 
-  // Valida e copia HTML nell'input nascosto prima dell'invio
-  const form = document.querySelector('form[method="POST"]:not([action])') ?? document.querySelector('form');
+  const form = document.getElementById('form-crea-articolo');
+  const msgEl = document.getElementById('crea-articolo-msg');
+  const btn = document.getElementById('btn-salva-articolo');
+
   if (form) {
-    form.addEventListener('submit', (e) => {
+    form.addEventListener('submit', async function(e) {
+      e.preventDefault();
+
       const html = quill.root.innerHTML;
       const isEmpty = html === '<p><br></p>' || html.trim() === '';
-      const hidden = document.getElementById('contenuto-hidden');
 
       if (isEmpty) {
-        e.preventDefault();
         quill.root.style.border = '1px solid #ef4444';
         quill.root.focus();
         return;
       }
-      if (hidden) hidden.value = html;
+
+      if (btn) { btn.disabled = true; btn.textContent = 'Salvataggio…'; }
+      if (msgEl) { msgEl.className = 'mt-3 text-sm'; msgEl.style.color = 'var(--text-muted)'; msgEl.textContent = 'Salvataggio in corso…'; msgEl.classList.remove('hidden'); }
+
+      try {
+        // Upload OG image se presente
+        let seoOgImage = (form.querySelector('input[name="seo_og_image_url"]') as HTMLInputElement)?.value?.trim() || '';
+        const ogFile = (form.querySelector('input[name="seo_og_image_file"]') as HTMLInputElement)?.files?.[0];
+        const uploadPanel = document.getElementById('og-panel-upload');
+        const isUploadTab = uploadPanel && !uploadPanel.classList.contains('hidden');
+
+        if (isUploadTab && ogFile && ogFile.size > 0) {
+          const fd = new FormData();
+          fd.append('file', ogFile);
+          const upRes = await fetch('/api/admin/og-image', { method: 'POST', body: fd });
+          const upData = await upRes.json();
+          if (!upRes.ok) throw new Error(upData.error || 'Errore upload immagine');
+          seoOgImage = upData.url;
+        }
+
+        const titolo = (form.querySelector('input[name="titolo"]') as HTMLInputElement)?.value?.trim();
+        const estratto = (form.querySelector('textarea[name="estratto"]') as HTMLTextAreaElement)?.value?.trim();
+        const pubblicato = (form.querySelector('input[name="pubblicato"]') as HTMLInputElement)?.checked;
+        const seoTitolo = (form.querySelector('input[name="seo_titolo"]') as HTMLInputElement)?.value?.trim();
+        const seoDesc = (form.querySelector('textarea[name="seo_descrizione"]') as HTMLTextAreaElement)?.value?.trim();
+
+        const res = await fetch('/api/admin/articoli', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({
+            titolo,
+            estratto,
+            pubblicato,
+            seo_titolo: seoTitolo || null,
+            seo_descrizione: seoDesc || null,
+            seo_og_image: seoOgImage || null,
+            contenuto_b64: btoa(unescape(encodeURIComponent(html))),
+          }),
+        });
+
+        const data = await res.json();
+        if (!res.ok) throw new Error(data.error || 'Errore salvataggio');
+
+        window.location.href = '/admin/blog?ok=1';
+      } catch (err) {
+        if (msgEl) {
+          msgEl.style.color = '#ef4444';
+          msgEl.textContent = '✗ ' + (err.message || 'Errore imprevisto');
+          msgEl.classList.remove('hidden');
+        }
+        if (btn) { btn.disabled = false; btn.textContent = 'Salva articolo'; }
+      }
     });
   }
 })();
