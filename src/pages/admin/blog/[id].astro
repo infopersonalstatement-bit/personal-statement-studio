@@ -2,61 +2,14 @@
 import AdminLayout from '../../../layouts/AdminLayout.astro';
 import { createSupabaseAdminClient } from '../../../lib/supabase/server';
 import SeoFields from '../../../components/admin/SeoFields.astro';
-import { processOgImage } from '../../../lib/og-image';
 
 const supabase = createSupabaseAdminClient();
 const { id }   = Astro.params;
 
-let successMsg = '';
+let successMsg = Astro.url.searchParams.get('ok') === '1'
+  ? 'Articolo aggiornato con successo!'
+  : '';
 let errorMsg   = '';
-
-function slugify(text: string) {
-  return text
-    .toLowerCase()
-    .replace(/[àáâãäå]/g, 'a').replace(/[èéêë]/g, 'e')
-    .replace(/[ìíîï]/g, 'i').replace(/[òóôõö]/g, 'o')
-    .replace(/[ùúûü]/g, 'u').replace(/ç/g, 'c').replace(/ñ/g, 'n')
-    .replace(/[^a-z0-9]+/g, '-').replace(/^-+|-+$/g, '');
-}
-
-// ─── Gestione POST ────────────────────────────────────────────────────────────
-if (Astro.request.method === 'POST') {
-  const formData  = await Astro.request.formData();
-  const titolo          = (formData.get('titolo')          as string)?.trim();
-  const estratto        = (formData.get('estratto')        as string)?.trim();
-  const contenuto       = (formData.get('contenuto')       as string)?.trim();
-  const pubblicato      = formData.get('pubblicato') === 'on';
-  const seo_titolo      = (formData.get('seo_titolo')      as string)?.trim() || null;
-  const seo_descrizione = (formData.get('seo_descrizione') as string)?.trim() || null;
-  const seo_og_image    = await processOgImage(formData);
-  const slugInput       = (formData.get('slug')            as string)?.trim();
-  const slug            = slugInput ? slugify(slugInput) : null;
-  const categoria_id    = (formData.get('categoria_id') as string)?.trim() || null;
-  const tagIds          = formData.getAll('tag_ids') as string[];
-
-  if (!titolo || !contenuto) {
-    errorMsg = 'Titolo e contenuto sono obbligatori.';
-  } else {
-    const updatePayload: Record<string, any> = {
-      titolo, estratto: estratto || null, contenuto, pubblicato,
-      seo_titolo, seo_descrizione, seo_og_image, categoria_id,
-    };
-    if (slug) updatePayload.slug = slug;
-
-    const { error: dbErr } = await supabase.from('articoli').update(updatePayload).eq('id', id);
-
-    if (dbErr) {
-      errorMsg = `Errore salvataggio: ${dbErr.message}`;
-    } else {
-      // Aggiorna tag: elimina tutti, reinserisci selezionati
-      await supabase.from('articoli_tag').delete().eq('articolo_id', id);
-      if (tagIds.length > 0) {
-        await supabase.from('articoli_tag').insert(tagIds.map(tid => ({ articolo_id: id, tag_id: tid })));
-      }
-      successMsg = 'Articolo aggiornato con successo!';
-    }
-  }
-}
 
 // ─── Carica articolo + categorie + tag ───────────────────────────────────────
 const [
@@ -103,7 +56,7 @@ const pubEsistente       = articolo.pubblicato ?? false;
   )}
 
   <section class="rounded-2xl border p-8" style="border-color: var(--border); background-color: color-mix(in srgb, var(--surface) 40%, transparent);">
-    <form method="POST" enctype="multipart/form-data" class="space-y-5">
+    <form id="form-modifica-articolo" class="space-y-5">
 
       <div>
         <label class="mb-1.5 block text-xs font-semibold uppercase tracking-widest" style="color: var(--text-muted);">Titolo *</label>
@@ -132,7 +85,6 @@ const pubEsistente       = articolo.pubblicato ?? false;
       <div>
         <label class="mb-1.5 block text-xs font-semibold uppercase tracking-widest" style="color: var(--text-muted);">Contenuto *</label>
         <div id="editor-contenuto" style="min-height: 360px;"></div>
-        <input type="hidden" name="contenuto" id="contenuto-hidden" />
       </div>
 
       <!-- Categoria -->
@@ -188,7 +140,8 @@ const pubEsistente       = articolo.pubblicato ?? false;
       />
 
       <div class="flex gap-3 pt-2">
-        <button type="submit" class="auth-submit">Salva modifiche</button>
+        <button type="submit" id="btn-salva-articolo" class="auth-submit">Salva modifiche</button>
+        <p id="modifica-articolo-msg" class="hidden self-center text-sm"></p>
       </div>
     </form>
   </section>
@@ -197,7 +150,7 @@ const pubEsistente       = articolo.pubblicato ?? false;
 
 <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/quill@2/dist/quill.snow.css" />
 <script is:inline src="https://cdn.jsdelivr.net/npm/quill@2/dist/quill.js"></script>
-<script is:inline define:vars={{ contenutoEsistente }}>
+<script is:inline define:vars={{ contenutoEsistente, articoloId: id }}>
 (function () {
   const toolbarOptions = [
     [{ header: [1, 2, 3, false] }],
@@ -220,14 +173,69 @@ const pubEsistente       = articolo.pubblicato ?? false;
     quill.root.innerHTML = contenutoEsistente;
   }
 
-  const form = document.querySelector('form');
+  function toB64(str) {
+    return btoa(unescape(encodeURIComponent(str)));
+  }
+
+  const form = document.getElementById('form-modifica-articolo');
+  const msgEl = document.getElementById('modifica-articolo-msg');
+  const btn = document.getElementById('btn-salva-articolo');
+
   if (form) {
-    form.addEventListener('submit', (e) => {
-      const html   = quill.root.innerHTML;
+    form.addEventListener('submit', async function(e) {
+      e.preventDefault();
+
+      const html = quill.root.innerHTML;
       const isEmpty = html === '<p><br></p>' || html.trim() === '';
-      if (isEmpty) { e.preventDefault(); quill.root.focus(); return; }
-      const hidden = document.getElementById('contenuto-hidden');
-      if (hidden) hidden.value = html;
+      if (isEmpty) { quill.root.focus(); return; }
+
+      if (btn) { btn.disabled = true; btn.textContent = 'Salvataggio…'; }
+      if (msgEl) { msgEl.style.color = 'var(--text-muted)'; msgEl.textContent = 'Salvataggio in corso…'; msgEl.classList.remove('hidden'); }
+
+      try {
+        let seoOgImage = form.querySelector('input[name="seo_og_image_url"]')?.value?.trim() || '';
+        const ogFile = form.querySelector('input[name="seo_og_image_file"]')?.files?.[0];
+        const uploadPanel = document.getElementById('og-panel-upload');
+        const isUploadTab = uploadPanel && !uploadPanel.classList.contains('hidden');
+
+        if (isUploadTab && ogFile && ogFile.size > 0) {
+          const fd = new FormData();
+          fd.append('file', ogFile);
+          const upRes = await fetch('/api/admin/og-image', { method: 'POST', body: fd });
+          const upData = await upRes.json();
+          if (!upRes.ok) throw new Error(upData.error || 'Errore upload immagine');
+          seoOgImage = upData.url;
+        }
+
+        const tagIds = Array.from(form.querySelectorAll('input[name="tag_ids"]:checked')).map(function(el) { return el.value; });
+
+        const res = await fetch('/api/admin/articoli', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({
+            action: 'aggiorna',
+            id: articoloId,
+            titolo: form.querySelector('input[name="titolo"]')?.value?.trim(),
+            estratto: form.querySelector('textarea[name="estratto"]')?.value?.trim() || null,
+            pubblicato: form.querySelector('input[name="pubblicato"]')?.checked,
+            seo_titolo: form.querySelector('input[name="seo_titolo"]')?.value?.trim() || null,
+            seo_descrizione: form.querySelector('textarea[name="seo_descrizione"]')?.value?.trim() || null,
+            seo_og_image: seoOgImage || null,
+            slug: form.querySelector('input[name="slug"]')?.value?.trim() || null,
+            categoria_id: form.querySelector('select[name="categoria_id"]')?.value?.trim() || null,
+            tag_ids: tagIds,
+            contenuto_b64: toB64(html),
+          }),
+        });
+
+        const data = await res.json();
+        if (!res.ok) throw new Error(data.error || 'Errore salvataggio');
+
+        window.location.href = window.location.pathname + '?ok=1';
+      } catch (err) {
+        if (msgEl) { msgEl.style.color = '#ef4444'; msgEl.textContent = '✗ ' + (err.message || 'Errore'); msgEl.classList.remove('hidden'); }
+        if (btn) { btn.disabled = false; btn.textContent = 'Salva modifiche'; }
+      }
     });
   }
 })();

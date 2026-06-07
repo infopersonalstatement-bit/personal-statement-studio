@@ -10,34 +10,6 @@ let successMsg = Astro.url.searchParams.get('ok') === '1'
   : '';
 let errorMsg = '';
 
-// ─── Gestione form POST ───────────────────────────────────────────────────────
-if (Astro.request.method === 'POST') {
-  try {
-    const formData = await Astro.request.formData();
-    const action = formData.get('action') as string;
-
-    if (action === 'toggle-pubblica') {
-      const id      = formData.get('id') as string;
-      const attuale = formData.get('attuale') === 'true';
-      const { error: dbErr } = await supabase
-        .from('articoli')
-        .update({ pubblicato: !attuale })
-        .eq('id', id);
-      if (dbErr) errorMsg = `Errore: ${dbErr.message}`;
-      else successMsg = !attuale ? 'Articolo pubblicato.' : 'Articolo rimesso in bozza.';
-    }
-
-    if (action === 'elimina') {
-      const id = formData.get('id') as string;
-      const { error: dbErr } = await supabase.from('articoli').delete().eq('id', id);
-      if (dbErr) errorMsg = `Errore eliminazione: ${dbErr.message}`;
-      else successMsg = 'Articolo eliminato.';
-    }
-  } catch (e: any) {
-    errorMsg = `Errore imprevisto: ${e.message}`;
-  }
-}
-
 // ─── Lista articoli ───────────────────────────────────────────────────────────
 const { data: articoli, error: listErr } = await supabase
   .from('articoli')
@@ -167,34 +139,28 @@ const { data: articoli, error: listErr } = await supabase
                 Modifica
               </a>
               <!-- Toggle pubblica/bozza -->
-              <form method="POST">
-                <input type="hidden" name="action" value="toggle-pubblica" />
-                <input type="hidden" name="id" value={a.id} />
-                <input type="hidden" name="attuale" value={String(a.pubblicato)} />
-                <button
-                  type="submit"
-                  class="rounded-full border px-3 py-1 text-xs transition-all duration-200"
-                  style="border-color: var(--border); color: var(--text-muted);"
-                  onmouseover="this.style.borderColor='var(--gold)'; this.style.color='var(--gold)'"
-                  onmouseout="this.style.borderColor='var(--border)'; this.style.color='var(--text-muted)'"
-                >
-                  {a.pubblicato ? 'Bozza' : 'Pubblica'}
-                </button>
-              </form>
+              <button
+                type="button"
+                class="btn-toggle-pubblica rounded-full border px-3 py-1 text-xs transition-all duration-200"
+                data-id={a.id}
+                data-attuale={String(a.pubblicato)}
+                style="border-color: var(--border); color: var(--text-muted);"
+                onmouseover="this.style.borderColor='var(--gold)'; this.style.color='var(--gold)'"
+                onmouseout="this.style.borderColor='var(--border)'; this.style.color='var(--text-muted)'"
+              >
+                {a.pubblicato ? 'Bozza' : 'Pubblica'}
+              </button>
               <!-- Elimina -->
-              <form method="POST" onsubmit="return confirm('Eliminare definitivamente questo articolo?')">
-                <input type="hidden" name="action" value="elimina" />
-                <input type="hidden" name="id" value={a.id} />
-                <button
-                  type="submit"
-                  class="rounded-full border px-3 py-1 text-xs transition-all duration-200"
-                  style="border-color: var(--border); color: var(--text-muted);"
-                  onmouseover="this.style.borderColor='#ef4444'; this.style.color='#ef4444'"
-                  onmouseout="this.style.borderColor='var(--border)'; this.style.color='var(--text-muted)'"
-                >
-                  Elimina
-                </button>
-              </form>
+              <button
+                type="button"
+                class="btn-elimina-articolo rounded-full border px-3 py-1 text-xs transition-all duration-200"
+                data-id={a.id}
+                style="border-color: var(--border); color: var(--text-muted);"
+                onmouseover="this.style.borderColor='#ef4444'; this.style.color='#ef4444'"
+                onmouseout="this.style.borderColor='var(--border)'; this.style.color='var(--text-muted)'"
+              >
+                Elimina
+              </button>
             </div>
           </div>
         ))}
@@ -321,6 +287,34 @@ const { data: articoli, error: listErr } = await supabase
       }
     });
   }
+
+  document.querySelectorAll('.btn-toggle-pubblica').forEach(function(el) {
+    el.addEventListener('click', async function() {
+      const id = el.getAttribute('data-id');
+      const attuale = el.getAttribute('data-attuale') === 'true';
+      const res = await fetch('/api/admin/articoli', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ action: 'toggle-pubblica', id, attuale }),
+      });
+      if (res.ok) window.location.reload();
+      else { const d = await res.json(); alert('Errore: ' + (d.error || 'sconosciuto')); }
+    });
+  });
+
+  document.querySelectorAll('.btn-elimina-articolo').forEach(function(el) {
+    el.addEventListener('click', async function() {
+      if (!confirm('Eliminare definitivamente questo articolo?')) return;
+      const id = el.getAttribute('data-id');
+      const res = await fetch('/api/admin/articoli', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ action: 'elimina', id }),
+      });
+      if (res.ok) window.location.reload();
+      else { const d = await res.json(); alert('Errore: ' + (d.error || 'sconosciuto')); }
+    });
+  });
 })();
 </script>
 
