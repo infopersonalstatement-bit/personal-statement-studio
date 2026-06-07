@@ -1,0 +1,25 @@
+---
+import { PROTOCOLLI } from '../../lib/protocolli';
+
+interface Props {
+  value?: string | null;
+  required?: boolean;
+}
+
+const { value = '', required = true } = Astro.props;
+---
+
+<div>
+  <label class="mb-1.5 block text-xs font-semibold uppercase tracking-widest" style="color: var(--text-muted);">
+    Protocollo *
+  </label>
+  <select name="protocollo" class="auth-input w-full" required={required}>
+    <option value="" disabled={required} selected={!value}>— Seleziona protocollo —</option>
+    {PROTOCOLLI.map((p) => (
+      <option value={p.slug} selected={value === p.slug}>{p.nome} — {p.tagline}</option>
+    ))}
+  </select>
+  <p class="mt-1 text-xs" style="color:var(--text-muted);">
+    Glow-Up = biologico/metabolico · Digital Identity = mente/concentrazione
+  </p>
+</div>

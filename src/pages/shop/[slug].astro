@@ -1,6 +1,7 @@
 ---
 import BaseLayout from '../../layouts/BaseLayout.astro';
 import ShareButton from '../../components/common/ShareButton.astro';
+import { getProtocollo } from '../../lib/protocolli';
 
 const { slug } = Astro.params;
 const user    = Astro.locals.user;
@@ -9,7 +10,7 @@ const isAdmin = Astro.locals.isAdmin;
 // Cerca prima per slug, poi per ID (compatibilità link vecchi con UUID)
 let prodotto: any = null;
 
-const selectFields = 'id, nome, prezzo, prezzo_originale, descrizione, anteprima, seo_titolo, seo_descrizione, seo_og_image, slug, categoria_id, categorie(id, nome, slug)';
+const selectFields = 'id, nome, prezzo, prezzo_originale, descrizione, anteprima, seo_titolo, seo_descrizione, seo_og_image, slug, protocollo, categoria_id, categorie(id, nome, slug)';
 
 const { data: bySlug } = await Astro.locals.supabase
   .from('prodotti').select(selectFields).eq('slug', slug).maybeSingle();
@@ -59,6 +60,7 @@ const percentualeSconto = prezzoOriginale
 const { data: tagRows } = await Astro.locals.supabase
   .from('prodotti_tag').select('tag(nome, slug)').eq('prodotto_id', prodotto.id);
 const tags = (tagRows ?? []).map((r: any) => r.tag).filter(Boolean);
+const protocolloHub = prodotto.protocollo ? getProtocollo(prodotto.protocollo) : null;
 
 // Prodotti correlati: stessa categoria
 const correlati = prodotto.categorie?.id
@@ -118,7 +120,7 @@ const correlati = prodotto.categorie?.id
         { href: '/',          label: 'Home' },
         { href: '/manifesto', label: 'Il Manifesto' },
         { href: '/blog',      label: 'Blog' },
-        { href: '/shop',      label: 'Prodotti' },
+        { href: '/shop',      label: 'Protocolli' },
       ].map(link => (
         <a
           href={link.href}
@@ -133,7 +135,14 @@ const correlati = prodotto.categorie?.id
     <!-- Breadcrumb sotto la nav -->
     <p class="mt-5 text-xs" style="color: var(--text-muted);">
       <a href="/shop" style="color:var(--text-muted);"
-        onmouseover="this.style.color='var(--gold)'" onmouseout="this.style.color='var(--text-muted)'">Prodotti</a>
+        onmouseover="this.style.color='var(--gold)'" onmouseout="this.style.color='var(--text-muted)'">Protocolli</a>
+      {protocolloHub && (
+        <>
+          <span class="mx-2">/</span>
+          <a href={protocolloHub.href} style="color:var(--text-muted);"
+            onmouseover="this.style.color='var(--gold)'" onmouseout="this.style.color='var(--text-muted)'">{protocolloHub.nome}</a>
+        </>
+      )}
       <span class="mx-2">/</span>
       <span style="color: var(--text);">{prodotto.nome}</span>
     </p>

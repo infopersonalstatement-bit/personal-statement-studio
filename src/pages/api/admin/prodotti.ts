@@ -4,6 +4,13 @@ import { createSupabaseAdminClient } from '../../../lib/supabase/server';
 
 export const prerender = false;
 
+const PROTOCOLLI_VALIDI = ['glow-up', 'digital-identity'] as const;
+
+function parseProtocollo(body: Record<string, unknown>): string | null {
+  const raw = String(body.protocollo ?? '').trim();
+  return PROTOCOLLI_VALIDI.includes(raw as typeof PROTOCOLLI_VALIDI[number]) ? raw : null;
+}
+
 function decodeHtmlField(body: Record<string, unknown>, plainKey: string, b64Key: string): string {
   if (body[b64Key]) {
     return Buffer.from(String(body[b64Key]), 'base64').toString('utf-8');
@@ -78,8 +85,10 @@ export const POST: APIRoute = async ({ request, locals }) => {
       .replace(/[ìí]/g, 'i').replace(/[òó]/g, 'o').replace(/[ùú]/g, 'u')
       .replace(/[^a-z0-9]+/g, '-').replace(/^-+|-+$/g, '') || null;
 
-    if (!id || !nome || isNaN(prezzo) || prezzo <= 0) {
-      return new Response(JSON.stringify({ error: 'Nome e prezzo (> 0) sono obbligatori' }), {
+    const protocollo = parseProtocollo(body);
+
+    if (!id || !nome || isNaN(prezzo) || prezzo <= 0 || !protocollo) {
+      return new Response(JSON.stringify({ error: 'Nome, protocollo e prezzo (> 0) sono obbligatori' }), {
         status: 400,
         headers: { 'Content-Type': 'application/json' },
       });
@@ -104,6 +113,7 @@ export const POST: APIRoute = async ({ request, locals }) => {
         seo_og_image,
         slug,
         categoria_id,
+        protocollo,
       };
       if (file_path) updateData.file_path = file_path;
 
@@ -183,8 +193,10 @@ export const POST: APIRoute = async ({ request, locals }) => {
     slug = nome.toLowerCase().replace(/[^a-z0-9]+/g, '-').replace(/^-+|-+$/g, '');
   }
 
-  if (!nome || isNaN(prezzo) || prezzo <= 0) {
-    return new Response(JSON.stringify({ error: 'Nome e prezzo (> 0) sono obbligatori' }), {
+  const protocollo = parseProtocollo(body);
+
+  if (!nome || isNaN(prezzo) || prezzo <= 0 || !protocollo) {
+    return new Response(JSON.stringify({ error: 'Nome, protocollo e prezzo (> 0) sono obbligatori' }), {
       status: 400,
       headers: { 'Content-Type': 'application/json' },
     });
@@ -213,6 +225,7 @@ export const POST: APIRoute = async ({ request, locals }) => {
       seo_descrizione,
       seo_og_image,
       categoria_id,
+      protocollo,
     }).select('id').single();
 
     if (error) {

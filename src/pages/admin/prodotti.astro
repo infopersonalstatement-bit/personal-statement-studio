@@ -3,6 +3,7 @@ import AdminLayout from '../../layouts/AdminLayout.astro';
 import { createSupabaseAdminClient } from '../../lib/supabase/server';
 import SeoFields from '../../components/admin/SeoFields.astro';
 import CategoryTagFields from '../../components/admin/CategoryTagFields.astro';
+import ProtocolloSelect from '../../components/admin/ProtocolloSelect.astro';
 
 const supabase = createSupabaseAdminClient();
 
@@ -18,7 +19,7 @@ const [
 ] = await Promise.all([
   supabase
     .from('prodotti')
-    .select('id, nome, prezzo, descrizione, slug, created_at')
+    .select('id, nome, prezzo, descrizione, slug, protocollo, created_at')
     .order('created_at', { ascending: false }),
   supabase.from('categorie').select('id, nome').in('tipo', ['shop', 'both']).order('nome'),
   supabase.from('tag').select('id, nome').in('tipo', ['shop', 'both']).order('nome'),
@@ -82,6 +83,8 @@ const [
           <p class="mt-1 text-xs" style="color:var(--text-muted);">Inserisci solo se vuoi mostrare uno sconto. Deve essere maggiore del prezzo attuale.</p>
         </div>
       </div>
+
+      <ProtocolloSelect />
 
       <div>
         <label class="mb-1.5 block text-xs font-semibold uppercase tracking-widest" style="color: var(--text-muted);">
@@ -171,6 +174,7 @@ const [
           <thead>
             <tr style="border-bottom: 1px solid var(--border); background-color: color-mix(in srgb, var(--surface) 60%, transparent);">
               <th class="px-5 py-3 text-left text-xs font-semibold uppercase tracking-widest" style="color: var(--text-muted);">Nome</th>
+              <th class="px-5 py-3 text-left text-xs font-semibold uppercase tracking-widest" style="color: var(--text-muted);">Protocollo</th>
               <th class="px-5 py-3 text-left text-xs font-semibold uppercase tracking-widest" style="color: var(--text-muted);">Prezzo</th>
               <th class="px-5 py-3 text-left text-xs font-semibold uppercase tracking-widest" style="color: var(--text-muted);">Creato</th>
               <th class="px-5 py-3 text-left text-xs font-semibold uppercase tracking-widest" style="color: var(--text-muted);">Azioni</th>
@@ -194,6 +198,9 @@ const [
                   >
                     /shop/{p.slug ?? p.id} ↗
                   </a>
+                </td>
+                <td class="px-5 py-4 text-xs" style="color: var(--text-muted);">
+                  {p.protocollo === 'glow-up' ? 'Glow-Up' : p.protocollo === 'digital-identity' ? 'Digital Identity' : '—'}
                 </td>
                 <td class="px-5 py-4 font-semibold" style="color: var(--gold);">€{Number(p.prezzo).toFixed(2)}</td>
                 <td class="px-5 py-4 text-xs" style="color: var(--text-muted);">
@@ -351,6 +358,7 @@ const [
             og_image_b64: ogImageB64,
             og_image_ext: ogImageExt,
             pdf_b64: pdfB64,
+            protocollo: form.querySelector('select[name="protocollo"]')?.value?.trim() || null,
             categoria_id: form.querySelector('select[name="categoria_id"]')?.value?.trim() || null,
             tag_ids: tagIds,
           }),

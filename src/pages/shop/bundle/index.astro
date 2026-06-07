@@ -1,0 +1,74 @@
+---
+import BaseLayout from '../../../layouts/BaseLayout.astro';
+import PageHero from '../../../components/common/PageHero.astro';
+import { BUNDLE_HUB } from '../../../lib/protocolli';
+
+const { data: bundles } = await Astro.locals.supabase
+  .from('bundles')
+  .select('id, nome, prezzo, prezzo_originale, descrizione, slug')
+  .order('created_at', { ascending: false });
+---
+
+<BaseLayout title="Bundle" description={BUNDLE_HUB.descrizione}>
+  <PageHero eyebrow="Protocollo · Bundle" subtitle={BUNDLE_HUB.descrizione}>
+    {BUNDLE_HUB.nome}
+  </PageHero>
+
+  <div class="mx-auto max-w-6xl px-6 pb-4">
+    <a href="/shop" class="text-xs uppercase tracking-widest" style="color: var(--text-muted);"
+      onmouseover="this.style.color='var(--gold)'" onmouseout="this.style.color='var(--text-muted)'">
+      ← Tutti i protocolli
+    </a>
+  </div>
+
+  <section class="mx-auto max-w-6xl px-6 py-10 pb-24">
+    {bundles && bundles.length > 0 ? (
+      <div class="grid gap-6 sm:grid-cols-2">
+        {bundles.map((b: any) => (
+          <a
+            href={`/shop/bundle/${b.slug ?? b.id}`}
+            class="group flex flex-col rounded-2xl border p-8 transition-all duration-300"
+            style="border-color: var(--border); background-color: var(--bg-card);"
+            onmouseover="this.style.borderColor='var(--gold)'; this.style.transform='translateY(-2px)'"
+            onmouseout="this.style.borderColor='var(--border)'; this.style.transform='translateY(0)'"
+          >
+            <p class="mb-2 text-[10px] font-semibold uppercase tracking-[0.3em]" style="color: var(--gold);">
+              Bundle · Risparmio
+            </p>
+            <h2 class="font-display mb-3 text-2xl font-light" style="color: var(--text);">{b.nome}</h2>
+            {b.descrizione && (
+              <p class="mb-6 flex-1 text-sm leading-relaxed line-clamp-3" style="color: var(--text-muted);">
+                {b.descrizione}
+              </p>
+            )}
+            <div class="flex flex-wrap items-baseline gap-2">
+              <p class="font-display text-3xl font-light" style="color: var(--gold);">
+                €{Number(b.prezzo).toFixed(2)}
+              </p>
+              {b.prezzo_originale && b.prezzo_originale > b.prezzo && (
+                <>
+                  <span class="font-display text-lg line-through" style="color: var(--text-muted);">
+                    €{Number(b.prezzo_originale).toFixed(2)}
+                  </span>
+                  <span class="rounded-full px-2 py-0.5 text-[10px] font-bold uppercase"
+                    style="background-color: color-mix(in srgb, var(--gold) 15%, transparent); color: var(--gold);">
+                    -{Math.round((1 - b.prezzo / b.prezzo_originale) * 100)}%
+                  </span>
+                </>
+              )}
+            </div>
+          </a>
+        ))}
+      </div>
+    ) : (
+      <div class="py-20 text-center">
+        <p class="font-display text-2xl font-light mb-3" style="color: var(--text);">
+          Nessun bundle disponibile
+        </p>
+        <p class="text-sm" style="color: var(--text-muted);">
+          Le offerte combinate saranno pubblicate a breve.
+        </p>
+      </div>
+    )}
+  </section>
+</BaseLayout>

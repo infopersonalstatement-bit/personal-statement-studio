@@ -1,0 +1,321 @@
+---
+import AdminLayout from '../../layouts/AdminLayout.astro';
+import { createSupabaseAdminClient } from '../../lib/supabase/server';
+import SeoFields from '../../components/admin/SeoFields.astro';
+
+const supabase = createSupabaseAdminClient();
+
+let successMsg = Astro.url.searchParams.get('ok') === '1'
+  ? 'Bundle creato con successo!'
+  : '';
+
+const [
+  { data: bundles, error: listErr },
+  { data: prodotti },
+] = await Promise.all([
+  supabase
+    .from('bundles')
+    .select('id, nome, prezzo, prezzo_originale, descrizione, slug, created_at')
+    .order('created_at', { ascending: false }),
+  supabase
+    .from('prodotti')
+    .select('id, nome, prezzo, protocollo')
+    .order('nome'),
+]);
+
+const { data: bundleLinks } = await supabase
+  .from('bundle_prodotti')
+  .select('bundle_id, prodotto_id');
+
+const prodottiPerBundle = new Map<string, number>();
+for (const link of bundleLinks ?? []) {
+  prodottiPerBundle.set(link.bundle_id, (prodottiPerBundle.get(link.bundle_id) ?? 0) + 1);
+}
+
+function protocolloLabel(slug: string | null) {
+  if (slug === 'glow-up') return 'Glow-Up';
+  if (slug === 'digital-identity') return 'Digital Identity';
+  return '';
+}
+---
+
+<AdminLayout title="Bundle" activeNav="bundles">
+
+  {successMsg && (
+    <div class="mb-6 rounded-xl border border-green-600/40 bg-green-600/10 px-5 py-3 text-sm text-green-400">{successMsg}</div>
+  )}
+
+  <section class="mb-14 rounded-2xl border p-8" style="border-color: var(--border); background-color: color-mix(in srgb, var(--surface) 40%, transparent);">
+    <h2 class="mb-2 font-display text-2xl font-light" style="color: var(--text);">Crea nuovo bundle</h2>
+    <p class="mb-6 text-sm" style="color: var(--text-muted);">
+      Unisci almeno 2 prodotti in un'unica offerta a prezzo scontato.
+    </p>
+
+    <form id="form-crea-bundle" class="space-y-5">
+      <div class="grid gap-5 sm:grid-cols-3">
+        <div>
+          <label class="mb-1.5 block text-xs font-semibold uppercase tracking-widest" style="color: var(--text-muted);">Nome bundle *</label>
+          <input type="text" name="nome" required class="auth-input w-full" placeholder="Es. Vault Completo" />
+        </div>
+        <div>
+          <label class="mb-1.5 block text-xs font-semibold uppercase tracking-widest" style="color: var(--text-muted);">Prezzo bundle (€) *</label>
+          <input type="number" name="prezzo" required min="0.01" step="0.01" class="auth-input w-full" placeholder="79.00" />
+        </div>
+        <div>
+          <label class="mb-1.5 block text-xs font-semibold uppercase tracking-widest" style="color: var(--text-muted);">
+            Prezzo originale (€) <span class="normal-case font-normal">— barrato</span>
+          </label>
+          <input type="number" name="prezzo_originale" min="0.01" step="0.01" class="auth-input w-full" placeholder="129.00" />
+        </div>
+      </div>
+
+      <div>
+        <label class="mb-1.5 block text-xs font-semibold uppercase tracking-widest" style="color: var(--text-muted);">
+          Descrizione breve <span class="normal-case">(appare sulle card)</span>
+        </label>
+        <textarea name="descrizione" rows="2" class="auth-input w-full resize-y" placeholder="Breve descrizione del pacchetto…"></textarea>
+      </div>
+
+      <div>
+        <label class="mb-1.5 block text-xs font-semibold uppercase tracking-widest" style="color: var(--text-muted);">
+          Testo di vendita
+        </label>
+        <div id="editor-anteprima" style="min-height: 220px;"></div>
+      </div>
+
+      <div>
+        <label class="mb-1.5 block text-xs font-semibold uppercase tracking-widest" style="color: var(--text-muted);">
+          Prodotti inclusi * <span class="normal-case">(minimo 2)</span>
+        </label>
+        <div class="max-h-64 overflow-y-auto rounded-xl border p-4" style="border-color: var(--border); background-color: var(--bg);">
+          {(prodotti ?? []).length > 0 ? (
+            <div class="space-y-2">
+              {(prodotti ?? []).map((p: any) => (
+                <label class="flex cursor-pointer items-center gap-3 rounded-lg border px-3 py-2 text-sm transition-colors"
+                  style="border-color: var(--border);"
+                  id={`prod-lbl-${p.id}`}>
+                  <input type="checkbox" name="prodotto_ids" value={p.id} class="rounded"
+                    onchange={`var l=document.getElementById('prod-lbl-${p.id}');l.style.borderColor=this.checked?'var(--gold)':'var(--border)';`} />
+                  <span style="color: var(--text);">{p.nome}</span>
+                  <span class="text-xs" style="color: var(--text-muted);">
+                    {protocolloLabel(p.protocollo)} · €{Number(p.prezzo).toFixed(2)}
+                  </span>
+                </label>
+              ))}
+            </div>
+          ) : (
+            <p class="text-sm" style="color: var(--text-muted);">
+              Nessun prodotto disponibile. <a href="/admin/prodotti" style="color: var(--gold);">Creane uno prima →</a>
+            </p>
+          )}
+        </div>
+      </div>
+
+      <SeoFields />
+
+      <div class="pt-2">
+        <button type="submit" id="btn-salva-bundle" class="auth-submit">Pubblica bundle</button>
+        <p id="crea-bundle-msg" class="mt-3 hidden text-sm"></p>
+      </div>
+    </form>
+  </section>
+
+  <section>
+    <h2 class="mb-5 font-display text-2xl font-light" style="color: var(--text);">Bundle pubblicati</h2>
+
+    {listErr && (
+      <p class="text-sm text-red-400">Errore caricamento: {listErr.message}</p>
+    )}
+
+    {bundles && bundles.length > 0 ? (
+      <div class="overflow-x-auto rounded-2xl border" style="border-color: var(--border);">
+        <table class="w-full text-sm">
+          <thead>
+            <tr style="border-bottom: 1px solid var(--border); background-color: color-mix(in srgb, var(--surface) 60%, transparent);">
+              <th class="px-5 py-3 text-left text-xs font-semibold uppercase tracking-widest" style="color: var(--text-muted);">Nome</th>
+              <th class="px-5 py-3 text-left text-xs font-semibold uppercase tracking-widest" style="color: var(--text-muted);">Prodotti</th>
+              <th class="px-5 py-3 text-left text-xs font-semibold uppercase tracking-widest" style="color: var(--text-muted);">Prezzo</th>
+              <th class="px-5 py-3 text-left text-xs font-semibold uppercase tracking-widest" style="color: var(--text-muted);">Creato</th>
+              <th class="px-5 py-3 text-left text-xs font-semibold uppercase tracking-widest" style="color: var(--text-muted);">Azioni</th>
+            </tr>
+          </thead>
+          <tbody>
+            {bundles.map((b: any) => (
+              <tr style="border-bottom: 1px solid var(--border);">
+                <td class="px-5 py-4">
+                  <p class="font-medium" style="color: var(--text);">{b.nome}</p>
+                  {b.descrizione && (
+                    <p class="mt-0.5 text-xs line-clamp-1" style="color: var(--text-muted);">{b.descrizione}</p>
+                  )}
+                  <a href={`/shop/bundle/${b.slug ?? b.id}`} target="_blank" class="mt-1 inline-block text-xs" style="color: var(--gold); opacity: 0.7;"
+                    onmouseover="this.style.opacity='1'" onmouseout="this.style.opacity='0.7'">
+                    /shop/bundle/{b.slug ?? b.id} ↗
+                  </a>
+                </td>
+                <td class="px-5 py-4 text-xs" style="color: var(--text-muted);">
+                  {prodottiPerBundle.get(b.id) ?? 0} prodotti
+                </td>
+                <td class="px-5 py-4 font-semibold" style="color: var(--gold);">€{Number(b.prezzo).toFixed(2)}</td>
+                <td class="px-5 py-4 text-xs" style="color: var(--text-muted);">
+                  {new Date(b.created_at).toLocaleDateString('it-IT', { day: '2-digit', month: 'short', year: 'numeric' })}
+                </td>
+                <td class="px-5 py-4">
+                  <div class="flex gap-2">
+                    <a href={`/admin/bundles/${b.id}`}
+                      class="rounded-full border px-3 py-1 text-xs transition-all duration-200"
+                      style="border-color: var(--gold); color: var(--gold);"
+                      onmouseover="this.style.backgroundColor='var(--gold)'; this.style.color='#0F0D0A'"
+                      onmouseout="this.style.backgroundColor='transparent'; this.style.color='var(--gold)'">
+                      Modifica
+                    </a>
+                    <button type="button" class="btn-elimina-bundle rounded-full border px-3 py-1 text-xs transition-all duration-200"
+                      data-id={b.id}
+                      style="border-color: var(--border); color: var(--text-muted);"
+                      onmouseover="this.style.borderColor='#ef4444'; this.style.color='#ef4444'"
+                      onmouseout="this.style.borderColor='var(--border)'; this.style.color='var(--text-muted)'">
+                      Elimina
+                    </button>
+                  </div>
+                </td>
+              </tr>
+            ))}
+          </tbody>
+        </table>
+      </div>
+    ) : (
+      <p class="text-sm" style="color: var(--text-muted);">Nessun bundle ancora pubblicato.</p>
+    )}
+  </section>
+
+</AdminLayout>
+
+<link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/quill@2/dist/quill.snow.css" />
+<script is:inline src="https://cdn.jsdelivr.net/npm/quill@2/dist/quill.js"></script>
+<script is:inline>
+(function () {
+  const toolbarOptions = [
+    [{ header: [1, 2, 3, false] }],
+    [{ size: ['small', false, 'large', 'huge'] }],
+    ['bold', 'italic', 'underline', 'strike'],
+    [{ color: [] }, { background: [] }],
+    [{ list: 'ordered' }, { list: 'bullet' }],
+    ['blockquote', 'link'],
+    ['clean'],
+  ];
+
+  const quill = new Quill('#editor-anteprima', {
+    theme: 'snow',
+    placeholder: 'Descrivi il valore del bundle…',
+    modules: { toolbar: toolbarOptions },
+  });
+
+  function toB64(str) {
+    return btoa(unescape(encodeURIComponent(str)));
+  }
+
+  function fileExt(name) {
+    return (name.split('.').pop() || 'jpg').toLowerCase();
+  }
+
+  function fileToB64(file) {
+    return new Promise(function(resolve, reject) {
+      var reader = new FileReader();
+      reader.onload = function() { resolve(String(reader.result).split(',')[1]); };
+      reader.onerror = reject;
+      reader.readAsDataURL(file);
+    });
+  }
+
+  async function parseApiResponse(res) {
+    var text = await res.text();
+    try { return { ok: res.ok, data: JSON.parse(text) }; }
+    catch (e) {
+      throw new Error(res.status === 403 ? 'Bloccato dal firewall Vercel — riprova tra poco' : (text.slice(0, 120) || 'Errore server'));
+    }
+  }
+
+  const form = document.getElementById('form-crea-bundle');
+  const msgEl = document.getElementById('crea-bundle-msg');
+  const btn = document.getElementById('btn-salva-bundle');
+
+  if (form) {
+    form.addEventListener('submit', async function(e) {
+      e.preventDefault();
+
+      const nome = form.querySelector('input[name="nome"]').value.trim();
+      const prezzo = parseFloat(form.querySelector('input[name="prezzo"]').value);
+      const prodottoIds = Array.from(form.querySelectorAll('input[name="prodotto_ids"]:checked')).map(function(el) { return el.value; });
+
+      if (!nome || isNaN(prezzo) || prezzo <= 0) {
+        if (msgEl) { msgEl.style.color = '#ef4444'; msgEl.textContent = 'Nome e prezzo (> 0) sono obbligatori.'; msgEl.classList.remove('hidden'); }
+        return;
+      }
+      if (prodottoIds.length < 2) {
+        if (msgEl) { msgEl.style.color = '#ef4444'; msgEl.textContent = 'Seleziona almeno 2 prodotti.'; msgEl.classList.remove('hidden'); }
+        return;
+      }
+
+      if (btn) { btn.disabled = true; btn.textContent = 'Salvataggio…'; }
+      if (msgEl) { msgEl.style.color = 'var(--text-muted)'; msgEl.textContent = 'Salvataggio in corso…'; msgEl.classList.remove('hidden'); }
+
+      try {
+        const ogFile = form.querySelector('input[name="seo_og_image_file"]')?.files?.[0];
+        const uploadPanel = document.getElementById('og-panel-upload');
+        const isUploadTab = uploadPanel && !uploadPanel.classList.contains('hidden');
+        let ogImageB64 = null;
+        let ogImageExt = null;
+        if (isUploadTab && ogFile && ogFile.size > 0) {
+          ogImageB64 = await fileToB64(ogFile);
+          ogImageExt = fileExt(ogFile.name);
+        }
+
+        const html = quill.root.innerHTML;
+        const anteprima = html === '<p><br></p>' ? '' : html;
+
+        const res = await fetch('/api/admin/bundles', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({
+            action: 'crea',
+            nome,
+            descrizione: form.querySelector('textarea[name="descrizione"]')?.value?.trim() || null,
+            anteprima_b64: anteprima ? toB64(anteprima) : null,
+            prezzo,
+            prezzo_originale: form.querySelector('input[name="prezzo_originale"]')?.value?.trim() || null,
+            slug: form.querySelector('input[name="slug"]')?.value?.trim() || null,
+            seo_titolo: form.querySelector('input[name="seo_titolo"]')?.value?.trim() || null,
+            seo_descrizione: form.querySelector('textarea[name="seo_descrizione"]')?.value?.trim() || null,
+            seo_og_image: form.querySelector('input[name="seo_og_image_url"]')?.value?.trim() || null,
+            og_image_b64: ogImageB64,
+            og_image_ext: ogImageExt,
+            prodotto_ids: prodottoIds,
+          }),
+        });
+
+        const { ok, data } = await parseApiResponse(res);
+        if (!ok) throw new Error(data.error || 'Errore salvataggio');
+
+        window.location.href = '/admin/bundles?ok=1';
+      } catch (err) {
+        if (msgEl) { msgEl.style.color = '#ef4444'; msgEl.textContent = '✗ ' + (err.message || 'Errore'); msgEl.classList.remove('hidden'); }
+        if (btn) { btn.disabled = false; btn.textContent = 'Pubblica bundle'; }
+      }
+    });
+  }
+
+  document.querySelectorAll('.btn-elimina-bundle').forEach(function(el) {
+    el.addEventListener('click', async function() {
+      if (!confirm('Eliminare definitivamente questo bundle?')) return;
+      const id = el.getAttribute('data-id');
+      const res = await fetch('/api/admin/bundles', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ action: 'elimina', id }),
+      });
+      const { ok, data } = await parseApiResponse(res);
+      if (ok) window.location.reload();
+      else alert('Errore: ' + (data.error || 'sconosciuto'));
+    });
+  });
+})();
+</script>

@@ -2,6 +2,7 @@
 import AdminLayout from '../../../layouts/AdminLayout.astro';
 import { createSupabaseAdminClient } from '../../../lib/supabase/server';
 import SeoFields from '../../../components/admin/SeoFields.astro';
+import ProtocolloSelect from '../../../components/admin/ProtocolloSelect.astro';
 
 const supabase = createSupabaseAdminClient();
 const { id }   = Astro.params;
@@ -18,7 +19,7 @@ const [
   { data: tagDisponibili },
 ] = await Promise.all([
   supabase.from('prodotti')
-    .select('id, nome, prezzo, prezzo_originale, descrizione, anteprima, file_path, slug, seo_titolo, seo_descrizione, seo_og_image, categoria_id')
+    .select('id, nome, prezzo, prezzo_originale, descrizione, anteprima, file_path, slug, protocollo, seo_titolo, seo_descrizione, seo_og_image, categoria_id')
     .eq('id', id).single(),
   supabase.from('categorie').select('id, nome').in('tipo', ['shop','both']).order('nome'),
   supabase.from('tag').select('id, nome').in('tipo', ['shop','both']).order('nome'),
@@ -76,6 +77,8 @@ const descrizioneEsistente = prodotto.descrizione ?? '';
           <p class="mt-1 text-xs" style="color:var(--text-muted);">Lascia vuoto per rimuovere lo sconto.</p>
         </div>
       </div>
+
+      <ProtocolloSelect value={prodotto.protocollo} />
 
       <div>
         <label class="mb-1.5 block text-xs font-semibold uppercase tracking-widest" style="color: var(--text-muted);">
@@ -265,6 +268,7 @@ const descrizioneEsistente = prodotto.descrizione ?? '';
             og_image_b64: ogImageB64,
             og_image_ext: ogImageExt,
             pdf_b64: pdfB64,
+            protocollo: form.querySelector('select[name="protocollo"]')?.value?.trim() || null,
             categoria_id: form.querySelector('select[name="categoria_id"]')?.value?.trim() || null,
             tag_ids: tagIds,
           }),

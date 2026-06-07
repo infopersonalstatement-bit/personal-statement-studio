@@ -1,12 +1,18 @@
 ---
 import BaseLayout from '../layouts/BaseLayout.astro';
 import PageHero from '../components/common/PageHero.astro';
+import { PROTOCOLLI, BUNDLE_HUB } from '../lib/protocolli';
 
-const { data: prodotti } = await Astro.locals.supabase
+const { data: counts } = await Astro.locals.supabase
   .from('prodotti')
-  .select('id, nome, prezzo, prezzo_originale, descrizione, slug')
-  .order('created_at', { ascending: false })
-  .limit(4);
+  .select('protocollo');
+
+const glowCount = (counts ?? []).filter((p) => p.protocollo === 'glow-up').length;
+const digitalCount = (counts ?? []).filter((p) => p.protocollo === 'digital-identity').length;
+
+const { count: bundleCount } = await Astro.locals.supabase
+  .from('bundles')
+  .select('*', { count: 'exact', head: true });
 ---
 
 <BaseLayout
@@ -112,42 +118,43 @@ const { data: prodotti } = await Astro.locals.supabase
         Dalla ricalibrazione ormonale all'isolamento neuro-chimico.
       </p>
 
-      {prodotti && prodotti.length > 0 ? (
-        <div class="grid gap-6 sm:grid-cols-2 lg:grid-cols-4">
-          {prodotti.map((p: any) => (
+      <div class="grid gap-6 sm:grid-cols-2 lg:grid-cols-3">
+        {PROTOCOLLI.map((proto) => {
+          const count = proto.slug === 'glow-up' ? glowCount : digitalCount;
+          return (
             <a
-              href={`/shop/${p.slug ?? p.id}`}
+              href={proto.href}
               class="group flex flex-col rounded-2xl border p-6 transition-all duration-300"
               style="border-color: var(--border); background-color: var(--bg-card);"
               onmouseover="this.style.borderColor='var(--gold)'"
               onmouseout="this.style.borderColor='var(--border)'"
             >
-              <h3 class="mb-3 text-sm font-semibold leading-snug" style="color: var(--text);">{p.nome}</h3>
-              {p.descrizione && (
-                <p class="mb-4 flex-1 text-xs leading-relaxed line-clamp-3" style="color: var(--text-muted);">{p.descrizione}</p>
-              )}
-              <div class="flex flex-wrap items-baseline gap-2">
-                <p class="font-display text-2xl font-light" style="color: var(--gold);">€{Number(p.prezzo).toFixed(2)}</p>
-                {p.prezzo_originale && p.prezzo_originale > p.prezzo && (
-                  <>
-                    <span class="font-display text-sm line-through" style="color: var(--text-muted);">
-                      €{Number(p.prezzo_originale).toFixed(2)}
-                    </span>
-                    <span class="rounded-full px-2 py-0.5 text-[10px] font-bold uppercase"
-                      style="background-color: color-mix(in srgb, var(--gold) 15%, transparent); color: var(--gold);">
-                      -{Math.round((1 - p.prezzo / p.prezzo_originale) * 100)}%
-                    </span>
-                  </>
-                )}
-              </div>
+              <p class="mb-2 text-[10px] font-semibold uppercase tracking-[0.3em]" style="color: var(--gold);">Protocollo</p>
+              <h3 class="font-display mb-2 text-2xl font-light" style="color: var(--text);">{proto.nome}</h3>
+              <p class="mb-3 text-xs font-semibold uppercase tracking-widest" style="color: var(--text-muted);">{proto.tagline}</p>
+              <p class="mb-4 flex-1 text-xs leading-relaxed" style="color: var(--text-muted);">{proto.descrizione}</p>
+              <p class="text-xs" style="color: var(--text-muted);">
+                {count > 0 ? `${count} disponibili` : 'In arrivo'}
+              </p>
             </a>
-          ))}
-        </div>
-      ) : (
-        <p class="text-center text-sm" style="color: var(--text-muted);">
-          I protocolli saranno disponibili a breve.
-        </p>
-      )}
+          );
+        })}
+        <a
+          href={BUNDLE_HUB.href}
+          class="group flex flex-col rounded-2xl border p-6 transition-all duration-300"
+          style="border-color: var(--border); background-color: color-mix(in srgb, var(--gold) 4%, var(--bg-card));"
+          onmouseover="this.style.borderColor='var(--gold)'"
+          onmouseout="this.style.borderColor='var(--border)'"
+        >
+          <p class="mb-2 text-[10px] font-semibold uppercase tracking-[0.3em]" style="color: var(--gold);">Offerta combinata</p>
+          <h3 class="font-display mb-2 text-2xl font-light" style="color: var(--text);">{BUNDLE_HUB.nome}</h3>
+          <p class="mb-3 text-xs font-semibold uppercase tracking-widest" style="color: var(--text-muted);">{BUNDLE_HUB.tagline}</p>
+          <p class="mb-4 flex-1 text-xs leading-relaxed" style="color: var(--text-muted);">{BUNDLE_HUB.descrizione}</p>
+          <p class="text-xs" style="color: var(--text-muted);">
+            {(bundleCount ?? 0) > 0 ? `${bundleCount} bundle attivi` : 'Nessun bundle ancora'}
+          </p>
+        </a>
+      </div>
 
       <div class="mt-12 text-center">
         <a

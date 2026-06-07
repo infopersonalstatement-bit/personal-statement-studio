@@ -1,0 +1,175 @@
+---
+import BaseLayout from '../../../layouts/BaseLayout.astro';
+
+const { slug } = Astro.params;
+const user = Astro.locals.user;
+const isAdmin = Astro.locals.isAdmin;
+
+let bundle: any = null;
+
+const selectFields = 'id, nome, prezzo, prezzo_originale, descrizione, anteprima, seo_titolo, seo_descrizione, seo_og_image, slug';
+
+const { data: bySlug } = await Astro.locals.supabase
+  .from('bundles').select(selectFields).eq('slug', slug).maybeSingle();
+
+if (bySlug) {
+  bundle = bySlug;
+} else {
+  const { data: byId } = await Astro.locals.supabase
+    .from('bundles').select(selectFields).eq('id', slug).maybeSingle();
+  if (byId) {
+    if (byId.slug) return Astro.redirect(`/shop/bundle/${byId.slug}`, 301);
+    bundle = byId;
+  }
+}
+
+if (!bundle) return Astro.redirect('/shop/bundle');
+
+const { data: bundleItems } = await Astro.locals.supabase
+  .from('bundle_prodotti')
+  .select('prodotti(id, nome, descrizione, prezzo, slug, protocollo)')
+  .eq('bundle_id', bundle.id);
+
+const prodottiInclusi = (bundleItems ?? []).map((r: any) => r.prodotti).filter(Boolean);
+const productIds = prodottiInclusi.map((p: any) => p.id);
+
+let hasPurchased = isAdmin;
+if (user && !isAdmin && productIds.length > 0) {
+  const { count } = await Astro.locals.supabase
+    .from('acquisti')
+    .select('id', { count: 'exact', head: true })
+    .eq('utente_id', user.id)
+    .in('prodotto_id', productIds);
+  hasPurchased = (count ?? 0) >= productIds.length;
+}
+
+const prezzoOriginale = bundle.prezzo_originale && bundle.prezzo_originale > bundle.prezzo
+  ? Number(bundle.prezzo_originale) : null;
+const percentualeSconto = prezzoOriginale
+  ? Math.round((1 - bundle.prezzo / prezzoOriginale) * 100) : null;
+
+const metaTitle = bundle.seo_titolo || bundle.nome;
+const metaDescription = bundle.seo_descrizione || bundle.descrizione || '';
+const bundleUrl = bundle.slug ? `/shop/bundle/${bundle.slug}` : `/shop/bundle/${bundle.id}`;
+const paypalClientId = import.meta.env.PAYPAL_CLIENT_ID;
+---
+
+<BaseLayout title={metaTitle} description={metaDescription} ogImage={bundle.seo_og_image} ogType="product">
+
+  <section class="relative flex flex-col items-center justify-center overflow-hidden px-6 py-16 text-center" style="min-height: 30vh;">
+    <div class="pointer-events-none absolute inset-0"
+      style="background: radial-gradient(ellipse 100% 80% at 50% -5%, color-mix(in srgb, var(--gold) 15%, transparent) 0%, transparent 65%);"></div>
+    <p class="mb-3 text-xs font-semibold uppercase tracking-[0.3em]" style="color: var(--gold);">Bundle</p>
+    <h1 class="font-display text-4xl font-light sm:text-5xl" style="color: var(--text);">{bundle.nome}</h1>
+    <p class="mt-4 text-sm" style="color: var(--text-muted);">
+      <a href="/shop/bundle" style="color:var(--text-muted);" onmouseover="this.style.color='var(--gold)'" onmouseout="this.style.color='var(--text-muted)'">Bundle</a>
+      <span class="mx-2">/</span>
+      <span>{bundle.nome}</span>
+    </p>
+  </section>
+
+  <article class="mx-auto max-w-4xl px-6 py-12">
+    <div class="grid gap-12 lg:grid-cols-[1fr_320px]">
+      <div>
+        {bundle.descrizione && (
+          <p class="mb-8 text-lg font-light leading-relaxed" style="color: var(--text-muted);">{bundle.descrizione}</p>
+        )}
+        {bundle.anteprima && (
+          <div class="prose-brand shop-sales-copy mb-10" set:html={bundle.anteprima} />
+        )}
+
+        <p class="mb-4 text-xs font-semibold uppercase tracking-[0.3em]" style="color: var(--gold);">
+          Protocolli inclusi ({prodottiInclusi.length})
+        </p>
+        <ul class="space-y-3">
+          {prodottiInclusi.map((p: any) => (
+            <li class="rounded-xl border px-5 py-4" style="border-color: var(--border); background-color: var(--bg-card);">
+              <p class="text-sm font-semibold" style="color: var(--text);">{p.nome}</p>
+              {p.descrizione && <p class="mt-1 text-xs" style="color: var(--text-muted);">{p.descrizione}</p>}
+              <p class="mt-1 text-xs uppercase tracking-widest" style="color: var(--gold);">
+                Valore singolo: €{Number(p.prezzo).toFixed(2)}
+              </p>
+            </li>
+          ))}
+        </ul>
+
+        {hasPurchased && (
+          <div class="mt-10 rounded-2xl border p-6"
+            style="border-color: color-mix(in srgb, var(--gold) 30%, transparent); background-color: color-mix(in srgb, var(--gold) 5%, transparent);">
+            <p class="mb-4 text-sm font-semibold" style="color: var(--gold);">Bundle acquistato — scarica i protocolli:</p>
+            <div class="flex flex-col gap-2">
+              {prodottiInclusi.map((p: any) => (
+                <a href={`/api/download/${p.id}`} target="_blank" rel="noopener noreferrer"
+                  class="text-sm underline" style="color: var(--gold);">{p.nome} →</a>
+              ))}
+            </div>
+          </div>
+        )}
+      </div>
+
+      <aside class="h-fit lg:sticky lg:top-24" id="acquisto">
+        <div class="rounded-2xl border p-7" style="border-color: var(--border); background-color: color-mix(in srgb, var(--surface) 60%, transparent);">
+          <div class="mb-1 flex flex-wrap items-baseline gap-3">
+            <p class="font-display text-4xl font-light" style="color: var(--gold);">€{Number(bundle.prezzo).toFixed(2)}</p>
+            {prezzoOriginale && (
+              <span class="font-display text-xl line-through" style="color: var(--text-muted);">€{prezzoOriginale.toFixed(2)}</span>
+            )}
+            {percentualeSconto && (
+              <span class="rounded-full px-2.5 py-1 text-xs font-bold uppercase"
+                style="background-color: color-mix(in srgb, var(--gold) 15%, transparent); color: var(--gold);">
+                -{percentualeSconto}%
+              </span>
+            )}
+          </div>
+          <p class="mb-6 text-xs uppercase tracking-widest" style="color: var(--text-muted);">
+            {prodottiInclusi.length} protocolli · un solo pagamento
+          </p>
+
+          {hasPurchased ? (
+            <a href="/dashboard" class="block w-full rounded-full py-3 text-center text-sm font-semibold uppercase tracking-widest"
+              style="background-color: var(--gold); color: #0F0D0A;">Vai alla dashboard</a>
+          ) : user ? (
+            <div>
+              <p class="mb-3 text-center text-xs" style="color: var(--text-muted);">Pagamento sicuro con PayPal</p>
+              <div id="paypal-button-container"></div>
+              <div id="paypal-msg" class="mt-3 hidden rounded-xl px-4 py-2 text-center text-sm"></div>
+            </div>
+          ) : (
+            <a href={`/auth/login?redirect=${bundleUrl}`}
+              class="block w-full rounded-full py-3 text-center text-sm font-semibold uppercase tracking-widest"
+              style="background-color: var(--gold); color: #0F0D0A;">Accedi per acquistare</a>
+          )}
+        </div>
+      </aside>
+    </div>
+  </article>
+</BaseLayout>
+
+{user && !hasPurchased && (
+  <>
+    <script is:inline src={`https://www.paypal.com/sdk/js?client-id=${paypalClientId}&currency=EUR`}></script>
+    <script is:inline define:vars={{ bundleId: bundle.id }}>
+      paypal.Buttons({
+        style: { shape: 'pill', color: 'gold', layout: 'vertical', label: 'pay' },
+        createOrder: async () => {
+          const res = await fetch('/api/paypal/create-order', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ bundleId }),
+          });
+          const data = await res.json();
+          if (!res.ok) throw new Error(data.error || 'Errore');
+          return data.id;
+        },
+        onApprove: async (data) => {
+          const res = await fetch('/api/paypal/capture-order', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ orderId: data.orderID, bundleId }),
+          });
+          if (res.ok) window.location.reload();
+        },
+      }).render('#paypal-button-container');
+    </script>
+  </>
+)}

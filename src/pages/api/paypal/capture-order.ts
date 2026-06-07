@@ -1,4 +1,5 @@
 import type { APIRoute } from 'astro';
+import { grantBundleAccess } from '../../../lib/bundle-acquisti';
 import { createSupabaseAdminClient } from '../../../lib/supabase/server';
 
 const PAYPAL_API =
@@ -26,7 +27,6 @@ async function getAccessToken(): Promise<string> {
 }
 
 export const POST: APIRoute = async ({ request, locals }) => {
-  // Solo utenti autenticati
   if (!locals.user) {
     return new Response(JSON.stringify({ error: 'Non autorizzato' }), {
       status: 401,
@@ -34,21 +34,26 @@ export const POST: APIRoute = async ({ request, locals }) => {
     });
   }
 
-  let orderId: string, productId: string;
+  let orderId: string;
+  let productId: string | undefined;
+  let bundleId: string | undefined;
+
   try {
     const body = await request.json();
-    orderId   = body.orderId;
+    orderId = body.orderId;
     productId = body.productId;
-    if (!orderId || !productId) throw new Error('Dati mancanti');
-  } catch {
-    return new Response(JSON.stringify({ error: 'Body non valido' }), {
+    bundleId = body.bundleId;
+    if (!orderId) throw new Error('orderId mancante');
+    if (!productId && !bundleId) throw new Error('productId o bundleId richiesto');
+  } catch (e: unknown) {
+    const msg = e instanceof Error ? e.message : 'Body non valido';
+    return new Response(JSON.stringify({ error: msg }), {
       status: 400,
       headers: { 'Content-Type': 'application/json' },
     });
   }
 
   try {
-    // 1. Cattura il pagamento su PayPal
     const token = await getAccessToken();
     const captureRes = await fetch(`${PAYPAL_API}/v2/checkout/orders/${orderId}/capture`, {
       method: 'POST',
@@ -59,8 +64,7 @@ export const POST: APIRoute = async ({ request, locals }) => {
     });
 
     if (!captureRes.ok) {
-      const err = await captureRes.json();
-      console.error('[capture-order] PayPal error:', err);
+      console.error('[capture-order] PayPal error:', await captureRes.json());
       return new Response(JSON.stringify({ error: 'Errore cattura PayPal' }), {
         status: 502,
         headers: { 'Content-Type': 'application/json' },
@@ -68,40 +72,49 @@ export const POST: APIRoute = async ({ request, locals }) => {
     }
 
     const capture = await captureRes.json();
-
-    // 2. Verifica che lo stato sia COMPLETED
     if (capture.status !== 'COMPLETED') {
-      return new Response(JSON.stringify({ error: `Pagamento non completato (stato: ${capture.status})` }), {
+      return new Response(JSON.stringify({ error: `Pagamento non completato (${capture.status})` }), {
         status: 402,
         headers: { 'Content-Type': 'application/json' },
       });
     }
 
-    // 3. Registra l'acquisto nel DB usando il client admin (bypass RLS)
     const supabaseAdmin = createSupabaseAdminClient();
-    const { error: dbError } = await supabaseAdmin.from('acquisti').upsert(
-      {
-        utente_id:       locals.user.id,
-        prodotto_id:     productId,
-        paypal_order_id: orderId,
-      },
-      { onConflict: 'utente_id,prodotto_id' }
-    );
 
-    if (dbError) {
-      console.error('[capture-order] DB error:', dbError.message);
-      return new Response(JSON.stringify({ error: 'Pagamento OK, errore salvataggio' }), {
-        status: 500,
-        headers: { 'Content-Type': 'application/json' },
-      });
+    if (bundleId) {
+      const result = await grantBundleAccess(supabaseAdmin, locals.user.id, bundleId, orderId);
+      if (result.error) {
+        return new Response(JSON.stringify({ error: result.error }), {
+          status: 500,
+          headers: { 'Content-Type': 'application/json' },
+        });
+      }
+    } else {
+      const { error: dbError } = await supabaseAdmin.from('acquisti').upsert(
+        {
+          utente_id: locals.user.id,
+          prodotto_id: productId!,
+          paypal_order_id: orderId,
+        },
+        { onConflict: 'utente_id,prodotto_id' },
+      );
+
+      if (dbError) {
+        console.error('[capture-order] DB error:', dbError.message);
+        return new Response(JSON.stringify({ error: 'Pagamento OK, errore salvataggio' }), {
+          status: 500,
+          headers: { 'Content-Type': 'application/json' },
+        });
+      }
     }
 
     return new Response(JSON.stringify({ success: true }), {
       status: 200,
       headers: { 'Content-Type': 'application/json' },
     });
-  } catch (err: any) {
-    console.error('[capture-order] Unexpected error:', err.message);
+  } catch (err: unknown) {
+    const msg = err instanceof Error ? err.message : 'Errore interno';
+    console.error('[capture-order]', msg);
     return new Response(JSON.stringify({ error: 'Errore interno' }), {
       status: 500,
       headers: { 'Content-Type': 'application/json' },

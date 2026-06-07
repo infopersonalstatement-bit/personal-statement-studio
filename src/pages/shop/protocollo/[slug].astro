@@ -1,0 +1,78 @@
+---
+import BaseLayout from '../../../layouts/BaseLayout.astro';
+import PageHero from '../../../components/common/PageHero.astro';
+import { getProtocollo } from '../../../lib/protocolli';
+
+const { slug } = Astro.params;
+const protocollo = slug ? getProtocollo(slug) : undefined;
+if (!protocollo) return Astro.redirect('/shop');
+
+const { data: prodotti } = await Astro.locals.supabase
+  .from('prodotti')
+  .select('id, nome, prezzo, prezzo_originale, descrizione, slug')
+  .eq('protocollo', slug)
+  .order('created_at', { ascending: false });
+---
+
+<BaseLayout title={protocollo.nome} description={protocollo.descrizione}>
+  <PageHero eyebrow={`Protocollo · ${protocollo.nome}`} subtitle={protocollo.descrizione}>
+    {protocollo.nome}
+  </PageHero>
+
+  <div class="mx-auto max-w-6xl px-6 pb-4">
+    <a href="/shop" class="text-xs uppercase tracking-widest" style="color: var(--text-muted);"
+      onmouseover="this.style.color='var(--gold)'" onmouseout="this.style.color='var(--text-muted)'">
+      ← Tutti i protocolli
+    </a>
+  </div>
+
+  <section class="mx-auto max-w-6xl px-6 py-10 pb-24">
+    {prodotti && prodotti.length > 0 ? (
+      <div class="grid gap-6 sm:grid-cols-2 lg:grid-cols-3">
+        {prodotti.map((p: any) => (
+          <a
+            href={`/shop/${p.slug ?? p.id}`}
+            class="group flex flex-col rounded-2xl border p-7 transition-all duration-300"
+            style="border-color: var(--border); background-color: var(--bg-card);"
+            onmouseover="this.style.borderColor='var(--gold)'; this.style.transform='translateY(-2px)'"
+            onmouseout="this.style.borderColor='var(--border)'; this.style.transform='translateY(0)'"
+          >
+            <p class="mb-2 text-[10px] font-semibold uppercase tracking-[0.3em]" style="color: var(--gold);">
+              {protocollo.nome}
+            </p>
+            <h2 class="font-display mb-3 text-xl font-light leading-snug" style="color: var(--text);">{p.nome}</h2>
+            {p.descrizione && (
+              <p class="mb-5 flex-1 text-sm leading-relaxed line-clamp-3" style="color: var(--text-muted);">
+                {p.descrizione}
+              </p>
+            )}
+            <div class="flex items-center justify-between gap-2">
+              <div class="flex flex-wrap items-baseline gap-2">
+                <p class="font-display text-2xl font-light" style="color: var(--gold);">
+                  €{Number(p.prezzo).toFixed(2)}
+                </p>
+                {p.prezzo_originale && p.prezzo_originale > p.prezzo && (
+                  <span class="font-display text-base line-through" style="color: var(--text-muted);">
+                    €{Number(p.prezzo_originale).toFixed(2)}
+                  </span>
+                )}
+              </div>
+              <span class="text-xs font-semibold uppercase tracking-widest" style="color: var(--text-muted);">
+                Dettagli →
+              </span>
+            </div>
+          </a>
+        ))}
+      </div>
+    ) : (
+      <div class="py-20 text-center">
+        <p class="font-display text-2xl font-light mb-3" style="color: var(--text);">
+          Protocolli in preparazione
+        </p>
+        <p class="text-sm" style="color: var(--text-muted);">
+          I contenuti per {protocollo.nome} saranno disponibili a breve.
+        </p>
+      </div>
+    )}
+  </section>
+</BaseLayout>
