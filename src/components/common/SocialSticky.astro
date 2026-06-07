@@ -3,7 +3,7 @@ const SOCIAL_LINKS = [
   {
     href: 'https://www.instagram.com/personalstatementstudio/',
     label: 'Instagram — Personal Statement Studio',
-    icon: '/logo-fb.png',
+    icon: '/logo-ig.png',
   },
   {
     href: 'https://it.pinterest.com/ilestatement/',
@@ -15,9 +15,10 @@ const SOCIAL_LINKS = [
 
 <!-- Desktop: colonna fissa a destra -->
 <aside
-  class="social-sticky-desktop fixed right-4 top-1/2 z-[90] hidden -translate-y-1/2 flex-col gap-3 md:flex"
+  class="social-sticky-desktop fixed right-4 top-1/2 z-[90] hidden -translate-y-1/2 flex-col items-center gap-3 md:flex"
   aria-label="Seguici sui social"
 >
+  <p class="social-sticky-label social-sticky-label--desktop">I Social</p>
   {SOCIAL_LINKS.map((link) => (
     <a
       href={link.href}
@@ -34,25 +35,50 @@ const SOCIAL_LINKS = [
 
 <!-- Mobile: barra fissa in basso -->
 <nav
-  class="social-sticky-mobile fixed bottom-0 left-0 right-0 z-[90] flex items-center justify-center gap-6 border-t px-4 py-2.5 backdrop-blur-md md:hidden"
+  class="social-sticky-mobile fixed bottom-0 left-0 right-0 z-[90] flex items-center justify-center gap-4 border-t px-4 py-2.5 backdrop-blur-md md:hidden"
   style="border-color: var(--border); background-color: color-mix(in srgb, var(--bg) 88%, transparent); padding-bottom: max(0.625rem, env(safe-area-inset-bottom));"
   aria-label="Seguici sui social"
 >
-  {SOCIAL_LINKS.map((link) => (
-    <a
-      href={link.href}
-      target="_blank"
-      rel="noopener noreferrer"
-      aria-label={link.label}
-      title={link.label}
-      class="social-sticky-link social-sticky-link--mobile"
-    >
-      <img src={link.icon} alt="" width="36" height="36" loading="lazy" decoding="async" />
-    </a>
-  ))}
+  <span class="social-sticky-label social-sticky-label--mobile">I Social</span>
+  <div class="flex items-center gap-5">
+    {SOCIAL_LINKS.map((link) => (
+      <a
+        href={link.href}
+        target="_blank"
+        rel="noopener noreferrer"
+        aria-label={link.label}
+        title={link.label}
+        class="social-sticky-link social-sticky-link--mobile"
+      >
+        <img src={link.icon} alt="" width="36" height="36" loading="lazy" decoding="async" />
+      </a>
+    ))}
+  </div>
 </nav>
 
 <style>
+  .social-sticky-label {
+    font-size: 0.65rem;
+    font-weight: 600;
+    text-transform: uppercase;
+    letter-spacing: 0.2em;
+    color: var(--gold);
+    white-space: nowrap;
+  }
+
+  .social-sticky-label--desktop {
+    margin-bottom: 0.125rem;
+    padding-bottom: 0.5rem;
+    border-bottom: 1px solid var(--border);
+    width: 100%;
+    text-align: center;
+  }
+
+  .social-sticky-label--mobile {
+    padding-right: 0.75rem;
+    border-right: 1px solid var(--border);
+  }
+
   .social-sticky-link {
     display: flex;
     align-items: center;
