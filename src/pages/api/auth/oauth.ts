@@ -1,4 +1,5 @@
 import type { APIRoute } from 'astro';
+import { authCallbackUrl } from '../../../lib/site';
 
 export const prerender = false;
 
@@ -16,7 +17,7 @@ export const GET: APIRoute = async ({ request, locals, redirect }) => {
   const { data, error } = await locals.supabase.auth.signInWithOAuth({
     provider,
     options: {
-      redirectTo: `${import.meta.env.PUBLIC_SITE_URL}/auth/callback`,
+      redirectTo: authCallbackUrl(request.url),
     },
   });
 

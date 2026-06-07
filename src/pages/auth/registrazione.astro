@@ -1,37 +1,67 @@
 ---
 import BaseLayout from '../../layouts/BaseLayout.astro';
 import AuthCard from '../../components/auth/AuthCard.astro';
+import { authCallbackUrl } from '../../lib/site';
 
 const redirectTo = Astro.url.searchParams.get('redirect') ?? '/dashboard';
+const callbackUrl = authCallbackUrl(Astro.request.url);
 
-let errorMsg  = '';
+let errorMsg   = '';
 let successMsg = '';
+let pendingEmail = '';
 
 if (Astro.request.method === 'POST') {
-  const form     = await Astro.request.formData();
-  const email    = String(form.get('email') ?? '');
-  const password = String(form.get('password') ?? '');
-  const confirm  = String(form.get('confirm') ?? '');
+  const form   = await Astro.request.formData();
+  const action = String(form.get('action') ?? 'signup');
+  const email  = String(form.get('email') ?? '').trim().toLowerCase();
 
-  if (password !== confirm) {
-    errorMsg = 'Le password non coincidono.';
-  } else if (password.length < 8) {
-    errorMsg = 'La password deve contenere almeno 8 caratteri.';
-  } else {
-    const { error } = await Astro.locals.supabase.auth.signUp({
-      email,
-      password,
-      options: {
-        emailRedirectTo: `${import.meta.env.PUBLIC_SITE_URL}/auth/callback`,
-      },
-    });
-
-    if (error) {
-      errorMsg = error.message === 'User already registered'
-        ? 'Esiste già un account con questa email.'
-        : 'Errore durante la registrazione. Riprova.';
+  if (action === 'resend') {
+    if (!email) {
+      errorMsg = 'Inserisci la tua email per rinviare il link di conferma.';
     } else {
-      successMsg = 'Controlla la tua email e clicca sul link di conferma per attivare l\'account.';
+      const { error } = await Astro.locals.supabase.auth.resend({
+        type: 'signup',
+        email,
+        options: { emailRedirectTo: callbackUrl },
+      });
+
+      if (error) {
+        console.error('[auth] resend signup:', error.message);
+        errorMsg = 'Impossibile rinviare l\'email. Riprova tra qualche minuto.';
+      } else {
+        pendingEmail = email;
+        successMsg = 'Abbiamo inviato di nuovo il link di conferma. Controlla anche la cartella spam.';
+      }
+    }
+  } else {
+    const password = String(form.get('password') ?? '');
+    const confirm  = String(form.get('confirm') ?? '');
+
+    if (password !== confirm) {
+      errorMsg = 'Le password non coincidono.';
+    } else if (password.length < 8) {
+      errorMsg = 'La password deve contenere almeno 8 caratteri.';
+    } else {
+      const { data, error } = await Astro.locals.supabase.auth.signUp({
+        email,
+        password,
+        options: { emailRedirectTo: callbackUrl },
+      });
+
+      if (error) {
+        console.error('[auth] signup:', error.message);
+        errorMsg = error.message === 'User already registered'
+          ? 'Esiste già un account con questa email. Prova ad accedere o a rinviare la conferma.'
+          : 'Errore durante la registrazione. Riprova.';
+      } else if (data.session) {
+        return Astro.redirect(redirectTo);
+      } else if (data.user && data.user.identities?.length === 0) {
+        errorMsg = 'Esiste già un account con questa email. Accedi o usa «Rinvia email» qui sotto.';
+        pendingEmail = email;
+      } else {
+        pendingEmail = email;
+        successMsg = 'Controlla la tua email e clicca sul link di conferma per attivare l\'account. Se non arriva entro qualche minuto, controlla lo spam o usa «Rinvia email».';
+      }
     }
   }
 }
@@ -54,12 +84,25 @@ const loginHref = redirectTo !== '/dashboard'
     )}
 
     {successMsg ? (
-      <div
-        class="rounded-xl px-5 py-6 text-center text-sm"
-        style="background-color: color-mix(in srgb, #22c55e 10%, transparent); color: #4ade80; border: 1px solid color-mix(in srgb, #22c55e 25%, transparent);"
-      >
-        <p class="mb-2 text-base font-semibold" style="color: var(--text);">Email inviata!</p>
-        <p style="color: var(--text-muted);">{successMsg}</p>
+      <div class="space-y-5">
+        <div
+          class="rounded-xl px-5 py-6 text-center text-sm"
+          style="background-color: color-mix(in srgb, #22c55e 10%, transparent); color: #4ade80; border: 1px solid color-mix(in srgb, #22c55e 25%, transparent);"
+        >
+          <p class="mb-2 text-base font-semibold" style="color: var(--text);">Email inviata!</p>
+          <p style="color: var(--text-muted);">{successMsg}</p>
+          {pendingEmail && (
+            <p class="mt-3 text-xs" style="color: var(--text-muted);">Inviata a <strong style="color: var(--text);">{pendingEmail}</strong></p>
+          )}
+        </div>
+
+        <form method="POST" class="space-y-3">
+          <input type="hidden" name="action" value="resend" />
+          <input type="hidden" name="email" value={pendingEmail} />
+          <button type="submit" class="auth-submit w-full">
+            Rinvia email di conferma
+          </button>
+        </form>
       </div>
     ) : (
       <form method="POST" class="space-y-4">
@@ -110,6 +153,16 @@ const loginHref = redirectTo !== '/dashboard'
 
         <button type="submit" class="auth-submit">
           Crea account
+        </button>
+      </form>
+    )}
+
+    {!successMsg && errorMsg && pendingEmail && (
+      <form method="POST" class="mt-4 space-y-3">
+        <input type="hidden" name="action" value="resend" />
+        <input type="hidden" name="email" value={pendingEmail} />
+        <button type="submit" class="oauth-btn w-full">
+          Rinvia email di conferma
         </button>
       </form>
     )}
