@@ -323,8 +323,30 @@ const [
       if (msgEl) { msgEl.style.color = 'var(--text-muted)'; msgEl.textContent = 'Preparazione file…'; msgEl.classList.remove('hidden'); }
 
       try {
-        const pdfB64 = await fileToB64(pdfFile);
+        // ── Step 1: ottieni signed URL da Supabase (bypassa limite Vercel) ──
+        if (msgEl) msgEl.textContent = 'Caricamento PDF…';
+        const urlRes = await fetch('/api/admin/upload-pdf', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ nome }),
+        });
+        const urlData = await urlRes.json();
+        if (!urlRes.ok) throw new Error(urlData.error || 'Errore generazione URL upload');
 
+        // ── Step 2: carica PDF direttamente su Supabase Storage ──
+        if (msgEl) msgEl.textContent = 'Upload PDF in corso (' + Math.round(pdfFile.size / 1024) + ' KB)…';
+        const uploadRes = await fetch(urlData.signed_url, {
+          method: 'PUT',
+          headers: { 'Content-Type': 'application/pdf' },
+          body: pdfFile,
+        });
+        if (!uploadRes.ok) {
+          const uploadErr = await uploadRes.text().catch(() => '');
+          throw new Error('Errore upload PDF: ' + (uploadErr.slice(0, 100) || uploadRes.status));
+        }
+        const pdfFilePath = urlData.path;
+
+        // ── Step 3: OG image (base64, piccola — max 5MB) ──
         const ogFile = form.querySelector('input[name="seo_og_image_file"]')?.files?.[0];
         const uploadPanel = document.getElementById('og-panel-upload');
         const isUploadTab = uploadPanel && !uploadPanel.classList.contains('hidden');
@@ -357,7 +379,7 @@ const [
             seo_og_image: form.querySelector('input[name="seo_og_image_url"]')?.value?.trim() || null,
             og_image_b64: ogImageB64,
             og_image_ext: ogImageExt,
-            pdf_b64: pdfB64,
+            file_path: pdfFilePath,
             protocollo: form.querySelector('select[name="protocollo"]')?.value?.trim() || null,
             categoria_id: form.querySelector('select[name="categoria_id"]')?.value?.trim() || null,
             tag_ids: tagIds,

@@ -16,26 +16,42 @@ const {
 } = Astro.props;
 
 const tipoLabel = tipo === 'blog' ? 'blog' : 'shop';
+const uid = tipo;
 ---
 
 <div class="grid gap-5 sm:grid-cols-2">
+
+  <!-- ── Categoria ────────────────────────────────────────── -->
   <div>
-    <label class="mb-1.5 block text-xs font-semibold uppercase tracking-widest" style="color:var(--text-muted);">Categoria</label>
-    <select name="categoria_id" class="auth-input w-full">
+    <div class="mb-1.5 flex items-center justify-between">
+      <label class="text-xs font-semibold uppercase tracking-widest" style="color:var(--text-muted);">Categoria</label>
+      <button
+        type="button"
+        id={`ctf-btn-cat-${uid}`}
+        class="text-xs font-medium uppercase tracking-wider transition-opacity hover:opacity-70"
+        style="color:var(--gold);"
+      >+ Nuova</button>
+    </div>
+    <select name="categoria_id" id={`ctf-select-cat-${uid}`} class="auth-input w-full">
       <option value="">— Nessuna categoria —</option>
       {categorie.map((c) => (
         <option value={c.id} selected={categoriaId === c.id}>{c.nome}</option>
       ))}
     </select>
-    {categorie.length === 0 && (
-      <p class="mt-1 text-xs" style="color:var(--text-muted);">
-        Nessuna categoria {tipoLabel}. <a href="/admin/categorie" style="color:var(--gold);">Creane una →</a>
-      </p>
-    )}
   </div>
+
+  <!-- ── Tag ──────────────────────────────────────────────── -->
   <div>
-    <label class="mb-1.5 block text-xs font-semibold uppercase tracking-widest" style="color:var(--text-muted);">Tag</label>
-    <div class="flex flex-wrap gap-2 rounded-xl border p-3" style="border-color:var(--border); background-color:var(--bg);">
+    <div class="mb-1.5 flex items-center justify-between">
+      <label class="text-xs font-semibold uppercase tracking-widest" style="color:var(--text-muted);">Tag</label>
+      <button
+        type="button"
+        id={`ctf-btn-tag-${uid}`}
+        class="text-xs font-medium uppercase tracking-wider transition-opacity hover:opacity-70"
+        style="color:var(--gold);"
+      >+ Nuovo</button>
+    </div>
+    <div id={`ctf-tags-${uid}`} class="flex flex-wrap gap-2 rounded-xl border p-3" style="border-color:var(--border); background-color:var(--bg);">
       {tagDisponibili.map((t) => (
         <label
           class="flex cursor-pointer items-center gap-1.5 rounded-full border px-2.5 py-1 text-xs transition-colors"
@@ -54,10 +70,296 @@ const tipoLabel = tipo === 'blog' ? 'blog' : 'shop';
         </label>
       ))}
       {tagDisponibili.length === 0 && (
-        <p class="text-xs" style="color:var(--text-muted);">
-          Nessun tag. <a href="/admin/categorie" style="color:var(--gold);">Creane uno →</a>
-        </p>
+        <p id={`ctf-no-tags-${uid}`} class="text-xs" style="color:var(--text-muted);">Nessun tag ancora.</p>
       )}
     </div>
   </div>
 </div>
+
+<!-- ── Modal Categoria ──────────────────────────────────── -->
+<div
+  id={`ctf-modal-cat-${uid}`}
+  role="dialog"
+  aria-modal="true"
+  aria-labelledby={`ctf-modal-cat-title-${uid}`}
+  style="display:none; position:fixed; inset:0; z-index:9999; background:rgba(0,0,0,0.65); align-items:center; justify-content:center; padding:24px;"
+>
+  <div
+    class="relative w-full max-w-sm rounded-2xl border p-7 shadow-2xl"
+    style="border-color:var(--border); background-color:var(--bg-card);"
+    id={`ctf-modal-cat-inner-${uid}`}
+  >
+    <h3 id={`ctf-modal-cat-title-${uid}`} class="mb-5 font-display text-lg font-light" style="color:var(--text);">
+      Nuova categoria <span class="text-xs uppercase tracking-widest" style="color:var(--text-muted);">({tipoLabel})</span>
+    </h3>
+
+    <div class="space-y-3">
+      <input
+        type="text"
+        id={`ctf-cat-nome-${uid}`}
+        placeholder="Nome categoria *"
+        class="auth-input w-full"
+        autocomplete="off"
+      />
+      <select id={`ctf-cat-tipo-${uid}`} class="auth-input w-full">
+        <option value={tipo} selected>Solo {tipoLabel}</option>
+        <option value="both">Blog + Shop</option>
+      </select>
+    </div>
+
+    <p id={`ctf-cat-msg-${uid}`} class="mt-3 text-xs" style="color:#ef4444; display:none;"></p>
+
+    <div class="mt-5 flex gap-3">
+      <button type="button" id={`ctf-cat-save-${uid}`} class="auth-submit flex-1">
+        Crea categoria
+      </button>
+      <button
+        type="button"
+        id={`ctf-cat-close-${uid}`}
+        class="flex-1 rounded-xl border py-2.5 text-sm font-medium transition-opacity hover:opacity-70"
+        style="border-color:var(--border); color:var(--text-muted);"
+      >
+        Annulla
+      </button>
+    </div>
+  </div>
+</div>
+
+<!-- ── Modal Tag ─────────────────────────────────────────── -->
+<div
+  id={`ctf-modal-tag-${uid}`}
+  role="dialog"
+  aria-modal="true"
+  aria-labelledby={`ctf-modal-tag-title-${uid}`}
+  style="display:none; position:fixed; inset:0; z-index:9999; background:rgba(0,0,0,0.65); align-items:center; justify-content:center; padding:24px;"
+>
+  <div
+    class="relative w-full max-w-sm rounded-2xl border p-7 shadow-2xl"
+    style="border-color:var(--border); background-color:var(--bg-card);"
+    id={`ctf-modal-tag-inner-${uid}`}
+  >
+    <h3 id={`ctf-modal-tag-title-${uid}`} class="mb-5 font-display text-lg font-light" style="color:var(--text);">
+      Nuovo tag <span class="text-xs uppercase tracking-widest" style="color:var(--text-muted);">({tipoLabel})</span>
+    </h3>
+
+    <div class="space-y-3">
+      <input
+        type="text"
+        id={`ctf-tag-nome-${uid}`}
+        placeholder="Nome tag *"
+        class="auth-input w-full"
+        autocomplete="off"
+      />
+      <select id={`ctf-tag-tipo-${uid}`} class="auth-input w-full">
+        <option value={tipo} selected>Solo {tipoLabel}</option>
+        <option value="both">Blog + Shop</option>
+      </select>
+    </div>
+
+    <p id={`ctf-tag-msg-${uid}`} class="mt-3 text-xs" style="color:#ef4444; display:none;"></p>
+
+    <div class="mt-5 flex gap-3">
+      <button type="button" id={`ctf-tag-save-${uid}`} class="auth-submit flex-1">
+        Crea tag
+      </button>
+      <button
+        type="button"
+        id={`ctf-tag-close-${uid}`}
+        class="flex-1 rounded-xl border py-2.5 text-sm font-medium transition-opacity hover:opacity-70"
+        style="border-color:var(--border); color:var(--text-muted);"
+      >
+        Annulla
+      </button>
+    </div>
+  </div>
+</div>
+
+<script define:vars={{ uid, tipo }}>
+(function() {
+  function slugify(t) {
+    return t.toLowerCase()
+      .replace(/[àáâ]/g,'a').replace(/[èé]/g,'e')
+      .replace(/[ìí]/g,'i').replace(/[òó]/g,'o').replace(/[ùú]/g,'u')
+      .replace(/[^a-z0-9]+/g,'-').replace(/^-+|-+$/g,'');
+  }
+
+  function openModal(id) {
+    var m = document.getElementById(id);
+    if (m) { m.style.display = 'flex'; m.querySelector('input')?.focus(); }
+  }
+
+  function closeModal(id) {
+    var m = document.getElementById(id);
+    if (m) m.style.display = 'none';
+  }
+
+  function showMsg(id, text, color) {
+    var el = document.getElementById(id);
+    if (!el) return;
+    el.textContent = text;
+    el.style.color = color || '#ef4444';
+    el.style.display = text ? 'block' : 'none';
+  }
+
+  // ── Categoria ──────────────────────────────────────────────
+  var btnCat   = document.getElementById('ctf-btn-cat-' + uid);
+  var modalCat = 'ctf-modal-cat-' + uid;
+
+  if (btnCat) {
+    btnCat.addEventListener('click', function() { openModal(modalCat); });
+  }
+
+  var closeCatBtn = document.getElementById('ctf-cat-close-' + uid);
+  if (closeCatBtn) closeCatBtn.addEventListener('click', function() { closeModal(modalCat); });
+
+  var modalCatEl = document.getElementById(modalCat);
+  if (modalCatEl) {
+    modalCatEl.addEventListener('click', function(e) {
+      if (e.target === modalCatEl) closeModal(modalCat);
+    });
+  }
+
+  var saveCatBtn = document.getElementById('ctf-cat-save-' + uid);
+  if (saveCatBtn) {
+    saveCatBtn.addEventListener('click', async function() {
+      var nomeEl = document.getElementById('ctf-cat-nome-' + uid);
+      var tipoEl = document.getElementById('ctf-cat-tipo-' + uid);
+      var nome = nomeEl ? nomeEl.value.trim() : '';
+      if (!nome) { showMsg('ctf-cat-msg-' + uid, 'Inserisci un nome.'); return; }
+
+      saveCatBtn.disabled = true;
+      saveCatBtn.textContent = 'Creazione…';
+      showMsg('ctf-cat-msg-' + uid, '');
+
+      try {
+        var res = await fetch('/api/admin/categorie', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({
+            action: 'crea_categoria',
+            nome: nome,
+            tipo: tipoEl ? tipoEl.value : tipo,
+          }),
+        });
+        var data = await res.json();
+        if (!res.ok) throw new Error(data.error || 'Errore creazione');
+
+        // Aggiungi al <select> e seleziona
+        var cat = data.categoria;
+        var select = document.getElementById('ctf-select-cat-' + uid);
+        if (select) {
+          var opt = document.createElement('option');
+          opt.value = cat.id;
+          opt.textContent = cat.nome;
+          opt.selected = true;
+          select.appendChild(opt);
+        }
+
+        if (nomeEl) nomeEl.value = '';
+        closeModal(modalCat);
+      } catch(e) {
+        showMsg('ctf-cat-msg-' + uid, e.message || 'Errore');
+        saveCatBtn.disabled = false;
+        saveCatBtn.textContent = 'Crea categoria';
+      }
+    });
+  }
+
+  // ── Tag ────────────────────────────────────────────────────
+  var btnTag   = document.getElementById('ctf-btn-tag-' + uid);
+  var modalTag = 'ctf-modal-tag-' + uid;
+
+  if (btnTag) {
+    btnTag.addEventListener('click', function() { openModal(modalTag); });
+  }
+
+  var closeTagBtn = document.getElementById('ctf-tag-close-' + uid);
+  if (closeTagBtn) closeTagBtn.addEventListener('click', function() { closeModal(modalTag); });
+
+  var modalTagEl = document.getElementById(modalTag);
+  if (modalTagEl) {
+    modalTagEl.addEventListener('click', function(e) {
+      if (e.target === modalTagEl) closeModal(modalTag);
+    });
+  }
+
+  var saveTagBtn = document.getElementById('ctf-tag-save-' + uid);
+  if (saveTagBtn) {
+    saveTagBtn.addEventListener('click', async function() {
+      var nomeEl = document.getElementById('ctf-tag-nome-' + uid);
+      var tipoEl = document.getElementById('ctf-tag-tipo-' + uid);
+      var nome = nomeEl ? nomeEl.value.trim() : '';
+      if (!nome) { showMsg('ctf-tag-msg-' + uid, 'Inserisci un nome.'); return; }
+
+      saveTagBtn.disabled = true;
+      saveTagBtn.textContent = 'Creazione…';
+      showMsg('ctf-tag-msg-' + uid, '');
+
+      try {
+        var res = await fetch('/api/admin/categorie', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({
+            action: 'crea_tag',
+            nome: nome,
+            tipo: tipoEl ? tipoEl.value : tipo,
+          }),
+        });
+        var data = await res.json();
+        if (!res.ok) throw new Error(data.error || 'Errore creazione');
+
+        // Aggiungi checkbox al contenitore tag e selezionalo
+        var tag = data.tag;
+        var container = document.getElementById('ctf-tags-' + uid);
+
+        // Rimuovi messaggio "Nessun tag"
+        var noTags = document.getElementById('ctf-no-tags-' + uid);
+        if (noTags) noTags.remove();
+
+        if (container) {
+          var labelEl = document.createElement('label');
+          labelEl.className = 'flex cursor-pointer items-center gap-1.5 rounded-full border px-2.5 py-1 text-xs transition-colors';
+          labelEl.id = 'tag-lbl-' + tag.id;
+          labelEl.style.borderColor = 'var(--gold)';
+          labelEl.style.color = 'var(--gold)';
+
+          var checkEl = document.createElement('input');
+          checkEl.type = 'checkbox';
+          checkEl.name = 'tag_ids';
+          checkEl.value = tag.id;
+          checkEl.checked = true;
+          checkEl.className = 'sr-only';
+          checkEl.addEventListener('change', function() {
+            var l = document.getElementById('tag-lbl-' + tag.id);
+            if (l) {
+              l.style.borderColor = this.checked ? 'var(--gold)' : 'var(--border)';
+              l.style.color = this.checked ? 'var(--gold)' : 'var(--text-muted)';
+            }
+          });
+
+          labelEl.appendChild(checkEl);
+          labelEl.appendChild(document.createTextNode(tag.nome));
+          container.appendChild(labelEl);
+        }
+
+        if (nomeEl) nomeEl.value = '';
+        saveTagBtn.disabled = false;
+        saveTagBtn.textContent = 'Crea tag';
+        closeModal(modalTag);
+      } catch(e) {
+        showMsg('ctf-tag-msg-' + uid, e.message || 'Errore');
+        saveTagBtn.disabled = false;
+        saveTagBtn.textContent = 'Crea tag';
+      }
+    });
+  }
+
+  // Chiudi modal con Escape
+  document.addEventListener('keydown', function(e) {
+    if (e.key === 'Escape') {
+      closeModal(modalCat);
+      closeModal(modalTag);
+    }
+  });
+})();
+</script>
