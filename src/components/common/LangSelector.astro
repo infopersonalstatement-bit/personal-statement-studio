@@ -1,0 +1,175 @@
+---
+import { SUPPORTED_LANGS, LANG_META, COOKIE_NAME } from '../../lib/i18n/index';
+
+interface Props {
+  currentLang: string;
+}
+const { currentLang } = Astro.props;
+const current = LANG_META[currentLang as keyof typeof LANG_META] ?? LANG_META.en;
+---
+
+<div class="lang-selector" id="lang-selector">
+  <button
+    type="button"
+    id="lang-trigger"
+    aria-haspopup="listbox"
+    aria-expanded="false"
+    class="lang-trigger"
+    title="Language / Lingua"
+  >
+    <span class="lang-flag">{current.flag}</span>
+    <span class="lang-code">{currentLang.toUpperCase()}</span>
+    <svg width="10" height="10" viewBox="0 0 10 10" aria-hidden="true" class="lang-chevron">
+      <path d="M2 3.5 L5 6.5 L8 3.5" stroke="currentColor" stroke-width="1.5" fill="none" stroke-linecap="round"/>
+    </svg>
+  </button>
+
+  <ul
+    role="listbox"
+    id="lang-dropdown"
+    class="lang-dropdown"
+    style="display:none;"
+    aria-label="Seleziona lingua"
+  >
+    {SUPPORTED_LANGS.map((lang) => {
+      const meta = LANG_META[lang];
+      return (
+        <li
+          role="option"
+          aria-selected={lang === currentLang}
+          class={`lang-option${lang === currentLang ? ' lang-option--active' : ''}`}
+          data-lang={lang}
+        >
+          <span class="lang-flag">{meta.flag}</span>
+          <span>{meta.label}</span>
+        </li>
+      );
+    })}
+  </ul>
+</div>
+
+<style>
+  .lang-selector {
+    position: relative;
+  }
+
+  .lang-trigger {
+    display: flex;
+    align-items: center;
+    gap: 0.3rem;
+    padding: 0.3rem 0.6rem;
+    border-radius: 9999px;
+    border: 1px solid var(--border);
+    background: transparent;
+    cursor: pointer;
+    font-size: 0.65rem;
+    font-weight: 600;
+    letter-spacing: 0.08em;
+    color: var(--text-muted);
+    transition: border-color 0.2s, color 0.2s;
+    white-space: nowrap;
+  }
+
+  .lang-trigger:hover {
+    border-color: var(--gold);
+    color: var(--gold);
+  }
+
+  .lang-flag {
+    font-size: 0.9rem;
+    line-height: 1;
+  }
+
+  .lang-code {
+    font-size: 0.6rem;
+    font-weight: 700;
+    letter-spacing: 0.1em;
+  }
+
+  .lang-chevron {
+    transition: transform 0.2s;
+    color: currentColor;
+  }
+
+  .lang-trigger[aria-expanded="true"] .lang-chevron {
+    transform: rotate(180deg);
+  }
+
+  .lang-dropdown {
+    position: absolute;
+    bottom: calc(100% + 8px);
+    left: 50%;
+    transform: translateX(-50%);
+    background-color: var(--bg-card);
+    border: 1px solid var(--border);
+    border-radius: 0.875rem;
+    padding: 0.4rem;
+    list-style: none;
+    margin: 0;
+    min-width: 140px;
+    box-shadow: 0 -8px 24px rgba(0,0,0,0.25);
+    z-index: 200;
+  }
+
+  .lang-option {
+    display: flex;
+    align-items: center;
+    gap: 0.5rem;
+    padding: 0.45rem 0.75rem;
+    border-radius: 0.5rem;
+    font-size: 0.75rem;
+    cursor: pointer;
+    color: var(--text-muted);
+    transition: background-color 0.15s, color 0.15s;
+    white-space: nowrap;
+  }
+
+  .lang-option:hover {
+    background-color: color-mix(in srgb, var(--gold) 12%, transparent);
+    color: var(--gold);
+  }
+
+  .lang-option--active {
+    color: var(--gold);
+    font-weight: 600;
+  }
+</style>
+
+<script define:vars={{ COOKIE_NAME }}>
+(function () {
+  var trigger  = document.getElementById('lang-trigger');
+  var dropdown = document.getElementById('lang-dropdown');
+  if (!trigger || !dropdown) return;
+
+  function open() {
+    dropdown.style.display = 'block';
+    trigger.setAttribute('aria-expanded', 'true');
+  }
+  function close() {
+    dropdown.style.display = 'none';
+    trigger.setAttribute('aria-expanded', 'false');
+  }
+  function toggle() {
+    dropdown.style.display === 'none' ? open() : close();
+  }
+
+  trigger.addEventListener('click', function (e) { e.stopPropagation(); toggle(); });
+
+  document.addEventListener('click', function () { close(); });
+
+  dropdown.querySelectorAll('.lang-option').forEach(function (opt) {
+    opt.addEventListener('click', function (e) {
+      e.stopPropagation();
+      var lang = opt.getAttribute('data-lang');
+      if (lang) {
+        document.cookie = COOKIE_NAME + '=' + lang + '; path=/; max-age=31536000; SameSite=Lax';
+        window.location.reload();
+      }
+    });
+  });
+
+  document.addEventListener('keydown', function (e) {
+    if (e.key === 'Escape') close();
+  });
+})();
+</script>

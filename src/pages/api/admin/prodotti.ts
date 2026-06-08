@@ -46,6 +46,16 @@ async function resolvePdfPath(
   return filePath || existing;
 }
 
+async function resolvePdfPathEn(
+  supabase: ReturnType<typeof createSupabaseAdminClient>,
+  body: Record<string, unknown>,
+  existing?: string | null,
+): Promise<string | null> {
+  const filePath = String(body.file_path_en ?? '').trim();
+  if (filePath) return filePath;
+  return existing ?? null;
+}
+
 export const POST: APIRoute = async ({ request, locals }) => {
   if (!locals.isAdmin) {
     return new Response(JSON.stringify({ error: 'Non autorizzato' }), {
@@ -96,6 +106,7 @@ export const POST: APIRoute = async ({ request, locals }) => {
 
     try {
       const file_path = await resolvePdfPath(supabase, body, nome);
+      const file_path_en = await resolvePdfPathEn(supabase, body);
       const seo_og_image = await resolveOgImage(
         supabase,
         body,
@@ -116,6 +127,7 @@ export const POST: APIRoute = async ({ request, locals }) => {
         protocollo,
       };
       if (file_path) updateData.file_path = file_path;
+      if (file_path_en !== null) updateData.file_path_en = file_path_en;
 
       const { error } = await supabase.from('prodotti').update(updateData).eq('id', id);
       if (error) {
@@ -205,12 +217,13 @@ export const POST: APIRoute = async ({ request, locals }) => {
   try {
     const file_path = await resolvePdfPath(supabase, body, nome);
     if (!file_path) {
-      return new Response(JSON.stringify({ error: 'PDF mancante' }), {
+      return new Response(JSON.stringify({ error: 'PDF italiano mancante' }), {
         status: 400,
         headers: { 'Content-Type': 'application/json' },
       });
     }
 
+    const file_path_en = await resolvePdfPathEn(supabase, body);
     const seo_og_image = await resolveOgImage(supabase, body, null);
 
     const { data: inserted, error } = await supabase.from('prodotti').insert({
@@ -220,6 +233,7 @@ export const POST: APIRoute = async ({ request, locals }) => {
       prezzo,
       prezzo_originale: (prezzo_originale && prezzo_originale > prezzo) ? prezzo_originale : null,
       file_path,
+      file_path_en,
       slug,
       seo_titolo,
       seo_descrizione,

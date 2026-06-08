@@ -16,7 +16,7 @@ export const POST: APIRoute = async ({ request, locals }) => {
     });
   }
 
-  let body: { nome?: string };
+  let body: { nome?: string; suffix?: string };
   try {
     body = await request.json();
   } catch {
@@ -27,11 +27,13 @@ export const POST: APIRoute = async ({ request, locals }) => {
   }
 
   const nome = String(body.nome ?? 'prodotto').trim();
+  const suffix = String(body.suffix ?? '').trim();
   const safeName = nome.toLowerCase()
     .replace(/[àáâ]/g, 'a').replace(/[èé]/g, 'e')
     .replace(/[ìí]/g, 'i').replace(/[òó]/g, 'o').replace(/[ùú]/g, 'u')
     .replace(/[^a-z0-9]+/g, '-').replace(/^-+|-+$/g, '') || 'prodotto';
-  const filePath = `pdfs/${safeName}-${Date.now()}.pdf`;
+  const suffixPart = suffix ? `-${suffix}` : '';
+  const filePath = `pdfs/${safeName}${suffixPart}-${Date.now()}.pdf`;
 
   const supabase = createSupabaseAdminClient();
   const { data, error } = await supabase.storage

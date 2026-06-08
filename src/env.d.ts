@@ -1,12 +1,15 @@
 /// <reference path="../.astro/types.d.ts" />
 
 import type { SupabaseClient, User } from '@supabase/supabase-js';
+import type { Lang } from './lib/i18n/index';
 
 declare namespace App {
   interface Locals {
     supabase: SupabaseClient;
     user: User | null;
     isAdmin: boolean;
+    lang: Lang;
+    t: (key: string, vars?: Record<string, string>) => string;
   }
 }
 

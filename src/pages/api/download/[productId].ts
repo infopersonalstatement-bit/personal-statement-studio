@@ -44,9 +44,12 @@ export const GET: APIRoute = async ({ params, locals, request }) => {
   }
 
   // 4. Recupera il percorso del file
+  const reqUrl = new URL(request.url);
+  const langParam = reqUrl.searchParams.get('lang') ?? 'it';
+
   const { data: prodotto, error: prodErr } = await supabaseAdmin
     .from('prodotti')
-    .select('file_path, nome')
+    .select('file_path, file_path_en, nome')
     .eq('id', productId)
     .single();
 
@@ -54,10 +57,14 @@ export const GET: APIRoute = async ({ params, locals, request }) => {
     return new Response('File non trovato', { status: 404 });
   }
 
+  const selectedPath = (langParam === 'en' && prodotto.file_path_en)
+    ? prodotto.file_path_en
+    : prodotto.file_path;
+
   // 5. Genera URL firmato (scade in 60 secondi)
   const { data: signedUrl, error: urlError } = await supabaseAdmin.storage
     .from('prodotti-digitali')
-    .createSignedUrl(prodotto.file_path, 60);
+    .createSignedUrl(selectedPath, 60);
 
   if (urlError || !signedUrl?.signedUrl) {
     console.error('[download] Errore URL firmato:', urlError?.message);

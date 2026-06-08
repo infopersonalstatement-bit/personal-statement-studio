@@ -2,16 +2,18 @@
 import DashboardLayout from '../../layouts/DashboardLayout.astro';
 
 const user = Astro.locals.user!;
+const t    = Astro.locals.t;
+const lang = Astro.locals.lang ?? 'it';
 
 // Carica gli acquisti dell'utente con i dettagli del prodotto
 const { data: acquisti } = await Astro.locals.supabase
   .from('acquisti')
-  .select('id, created_at, prodotti(id, nome, descrizione)')
+  .select('id, created_at, prodotti(id, nome, descrizione, file_path_en)')
   .eq('utente_id', user.id)
   .order('created_at', { ascending: false });
 ---
 
-<DashboardLayout title="I miei acquisti" activeNav="acquisti">
+<DashboardLayout title={t('dash_title')} activeNav="acquisti">
 
   {acquisti && acquisti.length > 0 ? (
     <ul class="grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
@@ -31,17 +33,32 @@ const { data: acquisti } = await Astro.locals.supabase
             </p>
           )}
           <time class="mb-4 text-xs" style="color: var(--text-muted);">
-            Acquistato il {new Date(a.created_at).toLocaleDateString('it-IT')}
+            {t('dash_purchased_on')} {new Date(a.created_at).toLocaleDateString(lang + '-' + lang.toUpperCase(), { day: '2-digit', month: '2-digit', year: 'numeric' })}
           </time>
-          <a
-            href={`/api/download/${a.prodotti?.id}`}
-            target="_blank"
-            rel="noopener noreferrer"
-            class="cta-main text-center"
-            style="font-size: 0.7rem; padding: 0.6rem 1rem;"
-          >
-            Scarica PDF
-          </a>
+          <div class="flex flex-col gap-2">
+            <a
+              href={`/api/download/${a.prodotti?.id}?lang=it`}
+              target="_blank"
+              rel="noopener noreferrer"
+              class="cta-main text-center"
+              style="font-size: 0.7rem; padding: 0.6rem 1rem;"
+            >
+              {t('dash_download_it')}
+            </a>
+            {a.prodotti?.file_path_en && (
+              <a
+                href={`/api/download/${a.prodotti?.id}?lang=en`}
+                target="_blank"
+                rel="noopener noreferrer"
+                class="text-center rounded-full border px-4 py-2 text-xs font-semibold uppercase tracking-widest transition-all duration-200"
+                style="border-color: var(--border); color: var(--text-muted); font-size: 0.7rem; padding: 0.6rem 1rem;"
+                onmouseover="this.style.borderColor='var(--gold)'; this.style.color='var(--gold)'"
+                onmouseout="this.style.borderColor='var(--border)'; this.style.color='var(--text-muted)'"
+              >
+                {t('dash_download_en')}
+              </a>
+            )}
+          </div>
         </li>
       ))}
     </ul>
@@ -54,13 +71,13 @@ const { data: acquisti } = await Astro.locals.supabase
         class="logo-full mb-8 w-32 opacity-40"
       />
       <h2 class="font-display mb-3 text-2xl font-light" style="color: var(--text);">
-        Nessun acquisto ancora
+        {t('dash_empty_title')}
       </h2>
       <p class="mb-8 max-w-sm text-sm leading-relaxed" style="color: var(--text-muted);">
-        I prodotti che acquisti appariranno qui e potrai scaricarli in qualsiasi momento.
+        {t('dash_empty_desc')}
       </p>
       <a href="/shop" class="cta-main">
-        Esplora i prodotti →
+        {t('dash_explore')}
       </a>
     </div>
   )}

@@ -6,6 +6,9 @@ import SocialSticky from '../components/common/SocialSticky.astro';
 const user = Astro.locals.user;
 if (!user) return Astro.redirect('/auth/login');
 
+const t = Astro.locals.t;
+const lang = Astro.locals.lang ?? 'it';
+
 // Nome visualizzato: nome dal profilo se compilato, altrimenti email
 const { data: profilo } = await Astro.locals.supabase
   .from('utenti')
@@ -23,14 +26,14 @@ interface Props {
 const { title, activeNav } = Astro.props;
 
 const navItems = [
-  { href: '/',                       label: 'Home',            id: 'home' },
-  { href: '/dashboard',              label: 'I miei acquisti', id: 'acquisti' },
-  { href: '/dashboard/impostazioni', label: 'Impostazioni',    id: 'impostazioni' },
+  { href: '/',                       label: t('nav_home'),      id: 'home' },
+  { href: '/dashboard',              label: t('nav_purchases'), id: 'acquisti' },
+  { href: '/dashboard/impostazioni', label: t('nav_settings'),  id: 'impostazioni' },
 ];
 ---
 
 <!doctype html>
-<html lang="it">
+<html lang={lang}>
   <head>
     <meta charset="UTF-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
@@ -90,7 +93,7 @@ const navItems = [
             onmouseover="this.style.borderColor='var(--gold)'; this.style.color='var(--gold)'"
             onmouseout="this.style.borderColor='var(--border)'; this.style.color='var(--text-muted)'"
           >
-            Esci
+            {t('nav_logout')}
           </button>
         </form>
       </div>
@@ -117,7 +120,7 @@ const navItems = [
 
       <div class="mb-10 border-b pb-6" style="border-color: var(--border);">
         <p class="mb-1 text-[10px] font-semibold uppercase tracking-[0.25em]" style="color: var(--gold);">
-          Area riservata
+          {t('nav_dashboard')}
         </p>
         <h1 class="font-display text-3xl font-light" style="color: var(--text);">{title}</h1>
       </div>

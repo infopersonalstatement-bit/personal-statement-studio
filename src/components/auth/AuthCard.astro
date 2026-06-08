@@ -5,6 +5,7 @@ interface Props {
 }
 
 const { title, subtitle } = Astro.props;
+const t = Astro.locals.t ?? ((k: string) => k);
 ---
 
 <section class="relative flex min-h-[calc(100vh-61px)] flex-col items-center justify-center px-6 py-16 pb-24">
@@ -46,7 +47,7 @@ const { title, subtitle } = Astro.props;
         onmouseover="this.style.color='var(--gold)'"
         onmouseout="this.style.color='var(--text-muted)'"
       >
-        ← Torna al sito
+        {t('nav_back_site')}
       </a>
     </p>
   </div>

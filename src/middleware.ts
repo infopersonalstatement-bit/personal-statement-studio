@@ -1,5 +1,6 @@
 import { defineMiddleware } from 'astro:middleware';
 import { createServerClient, parseCookieHeader } from '@supabase/ssr';
+import { detectLang, createT, COOKIE_NAME } from './lib/i18n/index';
 
 const PROTECTED_PATHS = ['/dashboard', '/admin'];
 const AUTH_PATHS      = ['/auth/login', '/auth/registrazione'];
@@ -27,6 +28,15 @@ export const onRequest = defineMiddleware(async (
 
   locals.supabase = supabase;
   locals.isAdmin  = false;
+
+  // ── Lingua ──────────────────────────────────────────────────
+  const langCookie = request.headers.get('Cookie')
+    ?.split(';')
+    .find((c) => c.trim().startsWith(`${COOKIE_NAME}=`))
+    ?.split('=')[1]?.trim() ?? null;
+  const lang = detectLang(request.headers.get('Accept-Language'), langCookie);
+  locals.lang = lang;
+  locals.t = createT(lang);
 
   const { data: { user } } = await supabase.auth.getUser();
   locals.user = user ?? null;

@@ -3,6 +3,7 @@ import BaseLayout from '../../layouts/BaseLayout.astro';
 import AuthCard from '../../components/auth/AuthCard.astro';
 import { authCallbackUrl } from '../../lib/site';
 
+const t = Astro.locals.t;
 const redirectTo = Astro.url.searchParams.get('redirect') ?? '/dashboard';
 const callbackUrl = authCallbackUrl(Astro.request.url);
 
@@ -71,8 +72,8 @@ const loginHref = redirectTo !== '/dashboard'
   : '/auth/login';
 ---
 
-<BaseLayout title="Registrati" description="Crea il tuo account Personal Statement Studio e accedi ai protocolli digitali.">
-  <AuthCard title="Crea il tuo account" subtitle="Inizia il tuo percorso">
+<BaseLayout title={t('auth_reg_title')} description="Crea il tuo account Personal Statement Studio e accedi ai protocolli digitali.">
+  <AuthCard title={t('auth_reg_title')} subtitle={t('auth_reg_subtitle')}>
 
     {errorMsg && (
       <div
@@ -89,10 +90,10 @@ const loginHref = redirectTo !== '/dashboard'
           class="rounded-xl px-5 py-6 text-center text-sm"
           style="background-color: color-mix(in srgb, #22c55e 10%, transparent); color: #4ade80; border: 1px solid color-mix(in srgb, #22c55e 25%, transparent);"
         >
-          <p class="mb-2 text-base font-semibold" style="color: var(--text);">Email inviata!</p>
+          <p class="mb-2 text-base font-semibold" style="color: var(--text);">{t('auth_email_sent')}</p>
           <p style="color: var(--text-muted);">{successMsg}</p>
           {pendingEmail && (
-            <p class="mt-3 text-xs" style="color: var(--text-muted);">Inviata a <strong style="color: var(--text);">{pendingEmail}</strong></p>
+            <p class="mt-3 text-xs" style="color: var(--text-muted);">{t('auth_sent_to')} <strong style="color: var(--text);">{pendingEmail}</strong></p>
           )}
         </div>
 
@@ -100,7 +101,7 @@ const loginHref = redirectTo !== '/dashboard'
           <input type="hidden" name="action" value="resend" />
           <input type="hidden" name="email" value={pendingEmail} />
           <button type="submit" class="auth-submit w-full">
-            Rinvia email di conferma
+            {t('auth_resend')}
           </button>
         </form>
       </div>
@@ -168,9 +169,9 @@ const loginHref = redirectTo !== '/dashboard'
     )}
 
     <p class="mt-6 text-center text-sm" style="color: var(--text-muted);">
-      Hai già un account?{' '}
+      {t('auth_has_account')}{' '}
       <a href={loginHref} class="font-medium underline underline-offset-2 transition-colors" style="color: var(--gold);">
-        Accedi
+        {t('auth_login_link')}
       </a>
     </p>
 

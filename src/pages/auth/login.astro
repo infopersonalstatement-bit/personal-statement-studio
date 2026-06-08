@@ -2,6 +2,7 @@
 import BaseLayout from '../../layouts/BaseLayout.astro';
 import AuthCard from '../../components/auth/AuthCard.astro';
 
+const t = Astro.locals.t;
 const redirectTo = Astro.url.searchParams.get('redirect') ?? '/dashboard';
 const errorParam = Astro.url.searchParams.get('error') ?? '';
 
@@ -32,8 +33,8 @@ const registrazioneHref = redirectTo !== '/dashboard'
   : '/auth/registrazione';
 ---
 
-<BaseLayout title="Accedi" description="Accedi al tuo account Personal Statement Studio per scaricare i protocolli acquistati.">
-  <AuthCard title="Bentornata" subtitle="Accedi al tuo account">
+<BaseLayout title={t('auth_login_title')} description="Accedi al tuo account Personal Statement Studio per scaricare i protocolli acquistati.">
+  <AuthCard title={t('auth_login_title')} subtitle={t('auth_login_subtitle')}>
 
     {errorMsg && (
       <div
@@ -52,20 +53,20 @@ const registrazioneHref = redirectTo !== '/dashboard'
           <path fill="#FBBC05" d="M5.84 14.09c-.22-.66-.35-1.36-.35-2.09s.13-1.43.35-2.09V7.07H2.18C1.43 8.55 1 10.22 1 12s.43 3.45 1.18 4.93l3.66-2.84z"/>
           <path fill="#EA4335" d="M12 5.38c1.62 0 3.06.56 4.21 1.64l3.15-3.15C17.45 2.09 14.97 1 12 1 7.7 1 3.99 3.47 2.18 7.07l3.66 2.84c.87-2.6 3.3-4.53 6.16-4.53z"/>
         </svg>
-        Continua con Google
+        {t('auth_google')}
       </button>
     </div>
 
     <div class="my-7 flex items-center gap-3">
       <div class="h-px flex-1" style="background-color: var(--border);"></div>
-      <span class="text-xs uppercase tracking-widest" style="color: var(--text-muted);">oppure</span>
+      <span class="text-xs uppercase tracking-widest" style="color: var(--text-muted);">{t('auth_or')}</span>
       <div class="h-px flex-1" style="background-color: var(--border);"></div>
     </div>
 
     <form method="POST" class="space-y-4">
       <div>
         <label for="email" class="mb-1.5 block text-xs font-medium uppercase tracking-wider" style="color: var(--text-muted);">
-          Email
+          {t('auth_email')}
         </label>
         <input
           id="email" name="email" type="email" required autocomplete="email"
@@ -75,7 +76,7 @@ const registrazioneHref = redirectTo !== '/dashboard'
 
       <div>
         <label for="password" class="mb-1.5 block text-xs font-medium uppercase tracking-wider" style="color: var(--text-muted);">
-          Password
+          {t('auth_password')}
         </label>
         <input
           id="password" name="password" type="password" required autocomplete="current-password"
@@ -84,14 +85,14 @@ const registrazioneHref = redirectTo !== '/dashboard'
       </div>
 
       <button type="submit" class="auth-submit">
-        Accedi
+        {t('auth_submit_login')}
       </button>
     </form>
 
     <p class="mt-6 text-center text-sm" style="color: var(--text-muted);">
-      Non hai un account?{' '}
+      {t('auth_no_account')}{' '}
       <a href={registrazioneHref} class="font-medium underline underline-offset-2 transition-colors" style="color: var(--gold);">
-        Registrati
+        {t('auth_register_link')}
       </a>
     </p>
 

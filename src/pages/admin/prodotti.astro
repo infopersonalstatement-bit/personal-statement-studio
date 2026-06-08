@@ -107,9 +107,10 @@ const [
         <p class="mt-1 text-xs" style="color:var(--text-muted);">Usa la barra in alto per formattare il testo — il risultato sarà mostrato come anteprima prima dell'acquisto.</p>
       </div>
 
+      <!-- PDF Italiano (obbligatorio) -->
       <div>
         <label class="mb-1.5 block text-xs font-semibold uppercase tracking-widest" style="color: var(--text-muted);">
-          File PDF * <span class="normal-case" style="color:var(--text-muted);">(verrà salvato in modo sicuro)</span>
+          PDF 🇮🇹 Italiano * <span class="normal-case" style="color:var(--text-muted);">(obbligatorio — verrà salvato in modo sicuro)</span>
         </label>
         <div
           class="flex items-center gap-4 rounded-xl border-2 border-dashed px-5 py-6 transition-colors duration-200"
@@ -120,8 +121,8 @@ const [
             <path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.5" d="M7 16a4 4 0 01-.88-7.903A5 5 0 1115.9 6L16 6a5 5 0 011 9.9M15 13l-3-3m0 0l-3 3m3-3v12" />
           </svg>
           <div class="flex-1">
-            <p class="text-sm" style="color:var(--text);">Seleziona il PDF da caricare</p>
-            <p class="text-xs" style="color:var(--text-muted);">Solo file .pdf · Max 50MB</p>
+            <p class="text-sm" style="color:var(--text);">Versione italiana del protocollo</p>
+            <p class="text-xs" style="color:var(--text-muted);">Solo file .pdf · Max 200MB</p>
           </div>
           <input
             type="file"
@@ -141,6 +142,44 @@ const [
           </label>
         </div>
         <p id="pdf-filename" class="mt-1.5 text-xs" style="color:var(--gold);"></p>
+      </div>
+
+      <!-- PDF Inglese (opzionale) -->
+      <div>
+        <label class="mb-1.5 block text-xs font-semibold uppercase tracking-widest" style="color: var(--text-muted);">
+          PDF 🇬🇧 English <span class="normal-case" style="color:var(--text-muted);">(opzionale — stessa guida in inglese)</span>
+        </label>
+        <div
+          class="flex items-center gap-4 rounded-xl border-2 border-dashed px-5 py-6 transition-colors duration-200"
+          style="border-color: var(--border);"
+          id="dropzone-en"
+        >
+          <svg xmlns="http://www.w3.org/2000/svg" class="h-8 w-8 flex-shrink-0" fill="none" viewBox="0 0 24 24" stroke="currentColor" style="color:var(--text-muted)">
+            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.5" d="M7 16a4 4 0 01-.88-7.903A5 5 0 1115.9 6L16 6a5 5 0 011 9.9M15 13l-3-3m0 0l-3 3m3-3v12" />
+          </svg>
+          <div class="flex-1">
+            <p class="text-sm" style="color:var(--text);">Versione inglese del protocollo</p>
+            <p class="text-xs" style="color:var(--text-muted);">Solo file .pdf · Max 200MB</p>
+          </div>
+          <input
+            type="file"
+            name="pdf_en"
+            accept=".pdf,application/pdf"
+            id="pdf-en-input"
+            class="absolute opacity-0"
+            style="width:1px; height:1px;"
+          />
+          <label
+            for="pdf-en-input"
+            class="cursor-pointer rounded-full border px-4 py-2 text-xs font-semibold uppercase tracking-widest transition-all duration-200"
+            style="border-color: var(--border); color: var(--text-muted);"
+            onmouseover="this.style.borderColor='var(--gold)'; this.style.color='var(--gold)'"
+            onmouseout="this.style.borderColor='var(--border)'; this.style.color='var(--text-muted)'"
+          >
+            Scegli file
+          </label>
+        </div>
+        <p id="pdf-en-filename" class="mt-1.5 text-xs" style="color:var(--gold);"></p>
       </div>
 
       <CategoryTagFields
@@ -250,6 +289,14 @@ const [
       label.textContent = file ? `✔ ${file.name} (${(file.size / 1024 / 1024).toFixed(1)} MB)` : '';
     });
   }
+  const inputEn = document.getElementById('pdf-en-input') as HTMLInputElement;
+  const labelEn = document.getElementById('pdf-en-filename') as HTMLParagraphElement;
+  if (inputEn && labelEn) {
+    inputEn.addEventListener('change', () => {
+      const file = inputEn.files?.[0];
+      labelEn.textContent = file ? `✔ ${file.name} (${(file.size / 1024 / 1024).toFixed(1)} MB)` : '';
+    });
+  }
 </script>
 
 <!-- Quill WYSIWYG -->
@@ -309,13 +356,14 @@ const [
       const nome = form.querySelector('input[name="nome"]').value.trim();
       const prezzo = parseFloat(form.querySelector('input[name="prezzo"]').value);
       const pdfFile = document.getElementById('pdf-input').files[0];
+      const pdfEnFile = document.getElementById('pdf-en-input').files[0] || null;
 
       if (!nome || isNaN(prezzo) || prezzo <= 0) {
         if (msgEl) { msgEl.style.color = '#ef4444'; msgEl.textContent = 'Nome e prezzo (> 0) sono obbligatori.'; msgEl.classList.remove('hidden'); }
         return;
       }
       if (!pdfFile) {
-        if (msgEl) { msgEl.style.color = '#ef4444'; msgEl.textContent = 'Carica un file PDF.'; msgEl.classList.remove('hidden'); }
+        if (msgEl) { msgEl.style.color = '#ef4444'; msgEl.textContent = 'Carica il PDF in italiano (obbligatorio).'; msgEl.classList.remove('hidden'); }
         return;
       }
 
@@ -323,18 +371,18 @@ const [
       if (msgEl) { msgEl.style.color = 'var(--text-muted)'; msgEl.textContent = 'Preparazione file…'; msgEl.classList.remove('hidden'); }
 
       try {
-        // ── Step 1: ottieni signed URL da Supabase (bypassa limite Vercel) ──
-        if (msgEl) msgEl.textContent = 'Caricamento PDF…';
+        // ── Step 1a: signed URL per PDF italiano ──
+        if (msgEl) msgEl.textContent = 'Upload PDF italiano…';
         const urlRes = await fetch('/api/admin/upload-pdf', {
           method: 'POST',
           headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({ nome }),
+          body: JSON.stringify({ nome, suffix: 'it' }),
         });
         const urlData = await urlRes.json();
         if (!urlRes.ok) throw new Error(urlData.error || 'Errore generazione URL upload');
 
-        // ── Step 2: carica PDF direttamente su Supabase Storage ──
-        if (msgEl) msgEl.textContent = 'Upload PDF in corso (' + Math.round(pdfFile.size / 1024) + ' KB)…';
+        // ── Step 1b: upload PDF italiano su Supabase Storage ──
+        if (msgEl) msgEl.textContent = 'Upload PDF IT (' + Math.round(pdfFile.size / 1024) + ' KB)…';
         const uploadRes = await fetch(urlData.signed_url, {
           method: 'PUT',
           headers: { 'Content-Type': 'application/pdf' },
@@ -342,11 +390,36 @@ const [
         });
         if (!uploadRes.ok) {
           const uploadErr = await uploadRes.text().catch(() => '');
-          throw new Error('Errore upload PDF: ' + (uploadErr.slice(0, 100) || uploadRes.status));
+          throw new Error('Errore upload PDF IT: ' + (uploadErr.slice(0, 100) || uploadRes.status));
         }
         const pdfFilePath = urlData.path;
 
-        // ── Step 3: OG image (base64, piccola — max 5MB) ──
+        // ── Step 1c: PDF inglese (opzionale) ──
+        let pdfEnFilePath = null;
+        if (pdfEnFile) {
+          if (msgEl) msgEl.textContent = 'Upload PDF inglese…';
+          const urlResEn = await fetch('/api/admin/upload-pdf', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ nome, suffix: 'en' }),
+          });
+          const urlDataEn = await urlResEn.json();
+          if (!urlResEn.ok) throw new Error(urlDataEn.error || 'Errore URL upload PDF EN');
+
+          if (msgEl) msgEl.textContent = 'Upload PDF EN (' + Math.round(pdfEnFile.size / 1024) + ' KB)…';
+          const uploadResEn = await fetch(urlDataEn.signed_url, {
+            method: 'PUT',
+            headers: { 'Content-Type': 'application/pdf' },
+            body: pdfEnFile,
+          });
+          if (!uploadResEn.ok) {
+            const uploadErrEn = await uploadResEn.text().catch(() => '');
+            throw new Error('Errore upload PDF EN: ' + (uploadErrEn.slice(0, 100) || uploadResEn.status));
+          }
+          pdfEnFilePath = urlDataEn.path;
+        }
+
+        // ── Step 2: OG image (base64, piccola — max 5MB) ──
         const ogFile = form.querySelector('input[name="seo_og_image_file"]')?.files?.[0];
         const uploadPanel = document.getElementById('og-panel-upload');
         const isUploadTab = uploadPanel && !uploadPanel.classList.contains('hidden');
@@ -380,6 +453,7 @@ const [
             og_image_b64: ogImageB64,
             og_image_ext: ogImageExt,
             file_path: pdfFilePath,
+            file_path_en: pdfEnFilePath,
             protocollo: form.querySelector('select[name="protocollo"]')?.value?.trim() || null,
             categoria_id: form.querySelector('select[name="categoria_id"]')?.value?.trim() || null,
             tag_ids: tagIds,
