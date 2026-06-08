@@ -33,7 +33,7 @@ const { data: acquisti } = await Astro.locals.supabase
             </p>
           )}
           <time class="mb-4 text-xs" style="color: var(--text-muted);">
-            {t('dash_purchased_on')} {new Date(a.created_at).toLocaleDateString(lang + '-' + lang.toUpperCase(), { day: '2-digit', month: '2-digit', year: 'numeric' })}
+            {t('dash_purchased_on')} {new Date(a.created_at).toLocaleDateString(lang === 'it' ? 'it-IT' : lang === 'fr' ? 'fr-FR' : lang === 'es' ? 'es-ES' : lang === 'de' ? 'de-DE' : 'en-GB', { day: '2-digit', month: '2-digit', year: 'numeric' })}
           </time>
           <div class="flex flex-col gap-2">
             <a

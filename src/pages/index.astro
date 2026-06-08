@@ -4,29 +4,20 @@ import PageHero from '../components/common/PageHero.astro';
 import ScrollReveal from '../components/common/ScrollReveal.astro';
 import { PROTOCOLLI, BUNDLE_HUB } from '../lib/protocolli';
 
+const t    = Astro.locals.t;
+const lang = Astro.locals.lang ?? 'it';
+
 const scenarioCards = [
-  {
-    num: '01',
-    title: 'Vuoi migliorare te stesso',
-    desc: 'Abitudini, mindset, immagine, routine quotidiana. Se il focus è crescere dentro — non solo "postare di più" — il percorso giusto è Glow-Up.',
-  },
-  {
-    num: '02',
-    title: 'Vuoi comunicare meglio online',
-    desc: 'Profilo, contenuti, caption, coerenza visiva. Se il problema è come farti vedere sui social, serve Digital Identity.',
-  },
-  {
-    num: '03',
-    title: 'Vuoi entrambi',
-    desc: 'Crescita personale e presenza online vanno di pari passo. I Bundle uniscono guide dei due mondi a prezzo vantaggioso.',
-  },
+  { num: '01', title: t('home_sc_01_title'), desc: t('home_sc_01_desc') },
+  { num: '02', title: t('home_sc_02_title'), desc: t('home_sc_02_desc') },
+  { num: '03', title: t('home_sc_03_title'), desc: t('home_sc_03_desc') },
 ];
 
 const { data: counts } = await Astro.locals.supabase
   .from('prodotti')
   .select('protocollo');
 
-const glowCount = (counts ?? []).filter((p) => p.protocollo === 'glow-up').length;
+const glowCount    = (counts ?? []).filter((p) => p.protocollo === 'glow-up').length;
 const digitalCount = (counts ?? []).filter((p) => p.protocollo === 'digital-identity').length;
 
 const { count: bundleCount } = await Astro.locals.supabase
@@ -36,25 +27,39 @@ const { count: bundleCount } = await Astro.locals.supabase
 
 <BaseLayout
   title="Home"
-  description="Crescita personale e presenza online. Protocolli digitali Glow-Up, Digital Identity e Bundle di Personal Statement Studio."
+  description={t('home_hero_subtitle')}
 >
 
   <!-- ── HERO ──────────────────────────────────────────────────────────── -->
   <PageHero
-    eyebrow="Personal Statement · Studio"
-    subtitle="Protocolli digitali in due percorsi: Glow-Up per migliorare te stesso, Digital Identity per comunicare online. I Bundle uniscono entrambi in un'unica offerta."
+    eyebrow={t('home_eyebrow')}
+    subtitle={t('home_hero_subtitle')}
     subtitleWide={true}
-    ctaText="Accedi ai Protocolli"
+    ctaText={t('home_cta')}
     ctaHref="/shop"
     minHeight="100vh"
     navLinks={[
-      { href: '/', label: 'Home' },
-      { href: '/manifesto', label: 'Il Manifesto' },
-      { href: '/blog', label: 'Blog' },
+      { href: '/',          label: t('nav_home') },
+      { href: '/manifesto', label: t('nav_manifesto') },
+      { href: '/blog',      label: t('nav_blog') },
     ]}
   >
-    Crescita personale e identità digitale<br />
-    per chi vuole <em class="not-italic font-semibold" style="color: var(--gold);">evolversi</em>.
+    {lang === 'it' ? (
+      <>Crescita personale e identità digitale<br />
+      per chi vuole <em class="not-italic font-semibold" style="color: var(--gold);">evolversi</em>.</>
+    ) : lang === 'fr' ? (
+      <>Croissance personnelle et identité digitale<br />
+      pour ceux qui veulent <em class="not-italic font-semibold" style="color: var(--gold);">évoluer</em>.</>
+    ) : lang === 'es' ? (
+      <>Crecimiento personal e identidad digital<br />
+      para quienes quieren <em class="not-italic font-semibold" style="color: var(--gold);">evolucionar</em>.</>
+    ) : lang === 'de' ? (
+      <>Persönliches Wachstum und digitale Identität<br />
+      für alle, die sich <em class="not-italic font-semibold" style="color: var(--gold);">weiterentwickeln</em> wollen.</>
+    ) : (
+      <>Personal growth and digital identity<br />
+      for those who want to <em class="not-italic font-semibold" style="color: var(--gold);">evolve</em>.</>
+    )}
   </PageHero>
 
   <!-- ── MISSIONE ─────────────────────────────────────────────────────── -->
@@ -62,11 +67,11 @@ const { count: bundleCount } = await Astro.locals.supabase
     <div class="mx-auto max-w-3xl px-6 text-center">
       <ScrollReveal>
         <p class="mb-4 text-xs font-semibold uppercase tracking-[0.3em]" style="color: var(--gold);">
-          La nostra missione
+          {t('home_mission')}
         </p>
         <p class="font-display text-2xl font-light leading-relaxed sm:text-3xl" style="color: var(--text);">
-          Migliorarsi e comunicare online non sono talenti innati.
-          <span class="block mt-3" style="color: var(--gold);">Sono competenze che si costruiscono.</span>
+          {t('home_mission_h1')}
+          <span class="block mt-3" style="color: var(--gold);">{t('home_mission_h2')}</span>
         </p>
       </ScrollReveal>
       <ScrollReveal delay={120}>
@@ -74,15 +79,8 @@ const { count: bundleCount } = await Astro.locals.supabase
       </ScrollReveal>
       <ScrollReveal delay={220}>
         <div class="space-y-5 text-left text-base leading-relaxed sm:text-center" style="color: var(--text-muted);">
-          <p>
-            Personal Statement offre <strong style="color: var(--gold);">protocolli digitali</strong> —
-            guide strutturate su crescita personale, immagine, abitudini e presenza sui social.
-            Niente contenuti generici: solo indicazioni chiare su <strong style="color: var(--text);">cosa fare e come farlo</strong>.
-          </p>
-          <p>
-            Che tu voglia lavorare su te stesso, sulla tua comunicazione online o su entrambi,
-            trovi il percorso giusto nel vault.
-          </p>
+          <p set:html={t('home_mission_p1')} />
+          <p>{t('home_mission_p2')}</p>
         </div>
       </ScrollReveal>
     </div>
@@ -93,14 +91,14 @@ const { count: bundleCount } = await Astro.locals.supabase
     <div class="mx-auto max-w-6xl">
       <ScrollReveal>
         <p class="mb-4 text-center text-xs font-semibold uppercase tracking-[0.3em]" style="color: var(--gold);">
-          Quale percorso fa per te?
+          {t('home_path_eyebrow')}
         </p>
         <h2 class="font-display mb-4 text-center text-3xl font-light sm:text-4xl" style="color: var(--text);">
-          Prima capisci dove sei.<br />
-          <em class="not-italic font-semibold" style="color: var(--gold);">Poi scegli cosa scaricare.</em>
+          {t('home_path_h2')}<br />
+          <em class="not-italic font-semibold" style="color: var(--gold);">{t('home_path_h2em')}</em>
         </h2>
         <p class="mx-auto mb-16 max-w-2xl text-center text-sm leading-relaxed" style="color: var(--text-muted);">
-          Ti riconosci in uno di questi scenari? Ogni situazione corrisponde a un percorso nel vault — scopri quale sotto.
+          {t('home_path_sub')}
         </p>
       </ScrollReveal>
 
@@ -128,21 +126,22 @@ const { count: bundleCount } = await Astro.locals.supabase
     <div class="mx-auto max-w-6xl">
       <ScrollReveal>
         <p class="mb-4 text-center text-xs font-semibold uppercase tracking-[0.3em]" style="color: var(--gold);">
-          Il vault digitale
+          {t('home_vault_eyebrow')}
         </p>
         <h2 class="font-display mb-4 text-center text-3xl font-light sm:text-4xl" style="color: var(--text);">
-          Scegli il tuo percorso.<br />
-          <em class="not-italic font-semibold" style="color: var(--gold);">Scarica e applica.</em>
+          {t('home_vault_h2')}<br />
+          <em class="not-italic font-semibold" style="color: var(--gold);">{t('home_vault_h2em')}</em>
         </h2>
         <p class="mb-16 text-center text-sm max-w-2xl mx-auto leading-relaxed" style="color: var(--text-muted);">
-          Ogni protocollo è un prodotto digitale: guide, consigli e strategie pronte da usare.
-          Dopo l'acquisto, i file restano sempre disponibili nella tua area riservata.
+          {t('home_vault_desc')}
         </p>
       </ScrollReveal>
 
       <div class="grid gap-6 sm:grid-cols-2 lg:grid-cols-3">
         {PROTOCOLLI.map((proto, i) => {
           const count = proto.slug === 'glow-up' ? glowCount : digitalCount;
+          const tagline = proto.slug === 'glow-up' ? t('proto_gup_tagline') : t('proto_di_tagline');
+          const desc    = proto.slug === 'glow-up' ? t('proto_gup_desc')    : t('proto_di_desc');
           return (
             <ScrollReveal delay={i * 140} class="h-full">
               <a
@@ -152,12 +151,12 @@ const { count: bundleCount } = await Astro.locals.supabase
                 onmouseover="this.style.borderColor='var(--gold)'"
                 onmouseout="this.style.borderColor='var(--border)'"
               >
-                <p class="mb-2 text-[10px] font-semibold uppercase tracking-[0.3em]" style="color: var(--gold);">Protocollo</p>
+                <p class="mb-2 text-[10px] font-semibold uppercase tracking-[0.3em]" style="color: var(--gold);">{t('proto_label')}</p>
                 <h3 class="font-display mb-2 text-2xl font-light" style="color: var(--text);">{proto.nome}</h3>
-                <p class="mb-3 text-xs font-semibold uppercase tracking-widest" style="color: var(--text-muted);">{proto.tagline}</p>
-                <p class="mb-4 flex-1 text-xs leading-relaxed" style="color: var(--text-muted);">{proto.descrizione}</p>
+                <p class="mb-3 text-xs font-semibold uppercase tracking-widest" style="color: var(--text-muted);">{tagline}</p>
+                <p class="mb-4 flex-1 text-xs leading-relaxed" style="color: var(--text-muted);">{desc}</p>
                 <p class="text-xs" style="color: var(--text-muted);">
-                  {count > 0 ? `${count} disponibili` : 'In arrivo'}
+                  {count > 0 ? `${count} ${t('home_avail')}` : t('home_coming')}
                 </p>
               </a>
             </ScrollReveal>
@@ -171,12 +170,12 @@ const { count: bundleCount } = await Astro.locals.supabase
             onmouseover="this.style.borderColor='var(--gold)'"
             onmouseout="this.style.borderColor='var(--border)'"
           >
-            <p class="mb-2 text-[10px] font-semibold uppercase tracking-[0.3em]" style="color: var(--gold);">Offerta combinata</p>
+            <p class="mb-2 text-[10px] font-semibold uppercase tracking-[0.3em]" style="color: var(--gold);">{t('bundle_label')}</p>
             <h3 class="font-display mb-2 text-2xl font-light" style="color: var(--text);">{BUNDLE_HUB.nome}</h3>
-            <p class="mb-3 text-xs font-semibold uppercase tracking-widest" style="color: var(--text-muted);">{BUNDLE_HUB.tagline}</p>
-            <p class="mb-4 flex-1 text-xs leading-relaxed" style="color: var(--text-muted);">{BUNDLE_HUB.descrizione}</p>
+            <p class="mb-3 text-xs font-semibold uppercase tracking-widest" style="color: var(--text-muted);">{t('bundle_tagline')}</p>
+            <p class="mb-4 flex-1 text-xs leading-relaxed" style="color: var(--text-muted);">{t('bundle_desc')}</p>
             <p class="text-xs" style="color: var(--text-muted);">
-              {(bundleCount ?? 0) > 0 ? `${bundleCount} bundle attivi` : 'Nessun bundle ancora'}
+              {(bundleCount ?? 0) > 0 ? `${bundleCount} ${t('home_bundles_active')}` : t('home_no_bundles')}
             </p>
           </a>
         </ScrollReveal>
@@ -190,7 +189,7 @@ const { count: bundleCount } = await Astro.locals.supabase
           onmouseover="this.style.backgroundColor='var(--gold)'; this.style.color='#0F0D0A'"
           onmouseout="this.style.backgroundColor='transparent'; this.style.color='var(--gold)'"
         >
-          Accedi ai Protocolli →
+          {t('home_cta')} →
         </a>
       </ScrollReveal>
     </div>
@@ -201,14 +200,13 @@ const { count: bundleCount } = await Astro.locals.supabase
     <div class="mx-auto max-w-2xl">
       <ScrollReveal>
         <p class="font-display mb-6 text-4xl font-light leading-tight sm:text-5xl" style="color: var(--text);">
-          Pronto a<br />
-          <em class="not-italic font-semibold" style="color: var(--gold);">iniziare?</em>
+          {t('home_final_h2')}<br />
+          <em class="not-italic font-semibold" style="color: var(--gold);">{t('home_final_h2em')}</em>
         </p>
       </ScrollReveal>
       <ScrollReveal delay={120}>
         <p class="mb-10 text-base leading-relaxed" style="color: var(--text-muted);">
-          Esplora i protocolli, scegli il percorso che fa per te e accedi ai contenuti dalla tua area riservata.
-          Per la filosofia dietro il metodo, leggi il Manifesto.
+          {t('home_final_sub')}
         </p>
       </ScrollReveal>
       <ScrollReveal delay={240}>
@@ -220,7 +218,7 @@ const { count: bundleCount } = await Astro.locals.supabase
             onmouseover="this.style.backgroundColor='var(--gold-hover)'"
             onmouseout="this.style.backgroundColor='var(--gold)'"
           >
-            Accedi ai Protocolli
+            {t('home_cta')}
           </a>
           <a
             href="/manifesto"
@@ -229,7 +227,7 @@ const { count: bundleCount } = await Astro.locals.supabase
             onmouseover="this.style.backgroundColor='var(--gold)'; this.style.color='#0F0D0A'"
             onmouseout="this.style.backgroundColor='transparent'; this.style.color='var(--gold)'"
           >
-            Leggi il Manifesto
+            {t('home_cta_manifesto')}
           </a>
         </div>
       </ScrollReveal>

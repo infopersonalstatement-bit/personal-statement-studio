@@ -3,7 +3,7 @@ import BaseLayout from '../../layouts/BaseLayout.astro';
 import PageHero from '../../components/common/PageHero.astro';
 import { getTranslationsMany, applyTranslations } from '../../lib/content-i18n';
 
-const lang = Astro.locals.lang ?? 'it';
+const lang = Astro.locals.lang  ?? 'it';
 const t    = Astro.locals.t;
 
 const { data: categorie } = await Astro.locals.supabase
@@ -32,7 +32,7 @@ const articoliTr = articoli.map((a: any) => applyTranslations(a, trMap.get(a.id)
   {categorie && categorie.length > 0 && (
     <div class="mx-auto max-w-4xl px-6 pb-2">
       <div class="flex flex-wrap gap-2">
-        <a href="/blog" class="tax-pill tax-pill-active">Tutti</a>
+        <a href="/blog" class="tax-pill tax-pill-active">{t('blog_all')}</a>
         {categorie.map((c: any) => (
           <a href={`/blog/categoria/${c.slug}`} class="tax-pill">{c.nome}</a>
         ))}
@@ -57,7 +57,7 @@ const articoliTr = articoli.map((a: any) => applyTranslations(a, trMap.get(a.id)
                 style="color: var(--gold);"
                 datetime={a.created_at}
               >
-                {new Date(a.created_at).toLocaleDateString('it-IT', { day: '2-digit', month: 'long', year: 'numeric' })}
+                {new Date(a.created_at).toLocaleDateString(lang === 'it' ? 'it-IT' : lang === 'fr' ? 'fr-FR' : lang === 'es' ? 'es-ES' : lang === 'de' ? 'de-DE' : 'en-GB', { day: '2-digit', month: 'long', year: 'numeric' })}
               </time>
               {a.categorie && (
                 <span class="rounded-full border px-2 py-0.5 text-[9px] font-semibold uppercase tracking-widest"
@@ -82,7 +82,7 @@ const articoliTr = articoli.map((a: any) => applyTranslations(a, trMap.get(a.id)
               class="self-start text-xs font-semibold uppercase tracking-widest transition-colors duration-200"
               style="color: var(--text-muted);"
             >
-              Leggi l'articolo →
+              {t('blog_read_more')}
             </span>
           </a>
         ))}
@@ -90,9 +90,9 @@ const articoliTr = articoli.map((a: any) => applyTranslations(a, trMap.get(a.id)
     ) : (
       <div class="py-24 text-center">
         <p class="font-display text-2xl font-light mb-3" style="color: var(--text);">
-          Stiamo scrivendo qualcosa di interessante.
+          {t('blog_empty_title')}
         </p>
-        <p class="text-sm" style="color: var(--text-muted);">Gli articoli saranno disponibili a breve.</p>
+        <p class="text-sm" style="color: var(--text-muted);">{t('blog_empty_desc')}</p>
       </div>
     )}
   </section>
