@@ -2,9 +2,12 @@
 import BaseLayout from '../../layouts/BaseLayout.astro';
 import PageHero from '../../components/common/PageHero.astro';
 import { PROTOCOLLI, BUNDLE_HUB } from '../../lib/protocolli';
+import { getPageSeo } from '../../lib/page-seo';
 
 const t    = Astro.locals.t;
 const lang = Astro.locals.lang ?? 'it';
+
+const pageSeo = await getPageSeo(Astro.locals.supabase, 'shop', lang);
 
 const { data: counts } = await Astro.locals.supabase
   .from('prodotti')
@@ -19,8 +22,9 @@ const { count: bundleCount } = await Astro.locals.supabase
 ---
 
 <BaseLayout
-  title={t('shop_hub_eyebrow')}
-  description={t('shop_hub_subtitle')}
+  title={pageSeo.seo_titolo ?? t('shop_hub_eyebrow')}
+  description={pageSeo.seo_descrizione ?? t('shop_hub_subtitle')}
+  ogImage={pageSeo.seo_og_image ?? undefined}
 >
   <PageHero
     eyebrow={t('shop_hub_eyebrow')}

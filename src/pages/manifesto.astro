@@ -3,8 +3,12 @@ import BaseLayout from '../layouts/BaseLayout.astro';
 import PageHero from '../components/common/PageHero.astro';
 import ScrollReveal from '../components/common/ScrollReveal.astro';
 import { PROTOCOLLI, BUNDLE_HUB } from '../lib/protocolli';
+import { getPageSeo } from '../lib/page-seo';
 
-const t = Astro.locals.t;
+const t    = Astro.locals.t;
+const lang = Astro.locals.lang ?? 'it';
+
+const pageSeo = await getPageSeo(Astro.locals.supabase, 'manifesto', lang);
 
 const valori = [
   { title: t('manifesto_val_01_t'), body: t('manifesto_val_01_b') },
@@ -22,8 +26,9 @@ const audience = [
 ---
 
 <BaseLayout
-  title={t('manifesto_eyebrow')}
-  description={t('manifesto_subtitle')}
+  title={pageSeo.seo_titolo ?? t('manifesto_eyebrow')}
+  description={pageSeo.seo_descrizione ?? t('manifesto_subtitle')}
+  ogImage={pageSeo.seo_og_image ?? undefined}
 >
 
   <PageHero

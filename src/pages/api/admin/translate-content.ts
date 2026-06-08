@@ -84,6 +84,44 @@ export const POST: APIRoute = async ({ request, locals }) => {
       };
       context = 'personal growth and digital identity guide bundles';
 
+    } else if (entity_type === 'pagina') {
+      const { data, error } = await supabase
+        .from('page_seo')
+        .select('seo_titolo, seo_descrizione')
+        .eq('page', entity_id)
+        .maybeSingle();
+      if (error || !data) throw new Error('Pagina non trovata: ' + entity_id);
+      fields = {
+        seo_titolo:      data.seo_titolo      ?? null,
+        seo_descrizione: data.seo_descrizione ?? null,
+      };
+      context = 'a personal growth and digital identity brand website';
+
+      // Per le pagine usa page_seo_translations invece di content_translations
+      const translations = await translateFields(fields, context);
+      const pageRows: { page: string; lang: string; seo_titolo: string; seo_descrizione: string }[] = [];
+      for (const lang of TARGET_LANGS) {
+        const t = translations[lang];
+        if (t.seo_titolo || t.seo_descrizione) {
+          pageRows.push({
+            page:            entity_id,
+            lang,
+            seo_titolo:      t.seo_titolo      ?? '',
+            seo_descrizione: t.seo_descrizione ?? '',
+          });
+        }
+      }
+      if (pageRows.length > 0) {
+        const { error: upsertErr } = await supabase
+          .from('page_seo_translations')
+          .upsert(pageRows, { onConflict: 'page,lang' });
+        if (upsertErr) throw new Error('Errore salvataggio: ' + upsertErr.message);
+      }
+      return new Response(
+        JSON.stringify({ ok: true, count: pageRows.length }),
+        { status: 200, headers: { 'Content-Type': 'application/json' } },
+      );
+
     } else {
       return new Response(JSON.stringify({ error: 'entity_type non supportato' }), {
         status: 400,

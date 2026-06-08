@@ -2,9 +2,12 @@
 import BaseLayout from '../../layouts/BaseLayout.astro';
 import PageHero from '../../components/common/PageHero.astro';
 import { getTranslationsMany, applyTranslations } from '../../lib/content-i18n';
+import { getPageSeo } from '../../lib/page-seo';
 
-const lang = Astro.locals.lang  ?? 'it';
+const lang = Astro.locals.lang ?? 'it';
 const t    = Astro.locals.t;
+
+const pageSeo = await getPageSeo(Astro.locals.supabase, 'blog', lang);
 
 const { data: categorie } = await Astro.locals.supabase
   .from('categorie').select('nome, slug').in('tipo', ['blog','both']).order('nome');
@@ -21,7 +24,11 @@ const trMap = await getTranslationsMany(Astro.locals.supabase, 'articolo', artic
 const articoliTr = articoli.map((a: any) => applyTranslations(a, trMap.get(a.id) ?? {}));
 ---
 
-<BaseLayout title="Blog" description="Riflessioni su identità, posizionamento e crescita personale.">
+<BaseLayout
+  title={pageSeo.seo_titolo ?? 'Blog'}
+  description={pageSeo.seo_descrizione ?? 'Riflessioni su identità, posizionamento e crescita personale.'}
+  ogImage={pageSeo.seo_og_image ?? undefined}
+>
 
   <PageHero eyebrow="Blog" subtitle="Riflessioni su identità, posizionamento e crescita.">
     Idee che<br />

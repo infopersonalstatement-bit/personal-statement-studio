@@ -3,12 +3,20 @@ import BaseLayout from '../../../layouts/BaseLayout.astro';
 import PageHero from '../../../components/common/PageHero.astro';
 import { getProtocollo } from '../../../lib/protocolli';
 import { getTranslationsMany, applyTranslations } from '../../../lib/content-i18n';
+import { getPageSeo } from '../../../lib/page-seo';
+import type { PageSlug } from '../../../lib/page-seo';
 
 const { slug } = Astro.params;
 const lang = Astro.locals.lang ?? 'it';
 const t    = Astro.locals.t;
 const protocollo = slug ? getProtocollo(slug) : undefined;
 if (!protocollo) return Astro.redirect('/shop');
+
+const validPageSlugs: PageSlug[] = ['glow-up', 'digital-identity', 'home', 'manifesto', 'shop', 'blog', 'bundle'];
+const pageSlug = validPageSlugs.includes(slug as PageSlug) ? (slug as PageSlug) : undefined;
+const pageSeo  = pageSlug
+  ? await getPageSeo(Astro.locals.supabase, pageSlug, lang)
+  : { seo_titolo: null, seo_descrizione: null, seo_og_image: null };
 
 const { data: prodottiRaw } = await Astro.locals.supabase
   .from('prodotti')
@@ -23,8 +31,9 @@ const prodottiTr = prodotti.map((p: any) => applyTranslations(p, trMap.get(p.id)
 ---
 
 <BaseLayout
-  title={protocollo.nome}
-  description={slug === 'glow-up' ? t('proto_gup_desc') : t('proto_di_desc')}
+  title={pageSeo.seo_titolo ?? protocollo.nome}
+  description={pageSeo.seo_descrizione ?? (slug === 'glow-up' ? t('proto_gup_desc') : t('proto_di_desc'))}
+  ogImage={pageSeo.seo_og_image ?? undefined}
 >
   <PageHero
     eyebrow={`${t('proto_label')} · ${protocollo.nome}`}

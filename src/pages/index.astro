@@ -3,9 +3,12 @@ import BaseLayout from '../layouts/BaseLayout.astro';
 import PageHero from '../components/common/PageHero.astro';
 import ScrollReveal from '../components/common/ScrollReveal.astro';
 import { PROTOCOLLI, BUNDLE_HUB } from '../lib/protocolli';
+import { getPageSeo } from '../lib/page-seo';
 
 const t    = Astro.locals.t;
 const lang = Astro.locals.lang ?? 'it';
+
+const pageSeo = await getPageSeo(Astro.locals.supabase, 'home', lang);
 
 const scenarioCards = [
   { num: '01', title: t('home_sc_01_title'), desc: t('home_sc_01_desc') },
@@ -26,8 +29,9 @@ const { count: bundleCount } = await Astro.locals.supabase
 ---
 
 <BaseLayout
-  title="Home"
-  description={t('home_hero_subtitle')}
+  title={pageSeo.seo_titolo ?? 'Home'}
+  description={pageSeo.seo_descrizione ?? t('home_hero_subtitle')}
+  ogImage={pageSeo.seo_og_image ?? undefined}
 >
 
   <!-- ── HERO ──────────────────────────────────────────────────────────── -->

@@ -3,9 +3,12 @@ import BaseLayout from '../../../layouts/BaseLayout.astro';
 import PageHero from '../../../components/common/PageHero.astro';
 import { BUNDLE_HUB } from '../../../lib/protocolli';
 import { getTranslationsMany, applyTranslations } from '../../../lib/content-i18n';
+import { getPageSeo } from '../../../lib/page-seo';
 
 const t    = Astro.locals.t;
 const lang = Astro.locals.lang ?? 'it';
+
+const pageSeo = await getPageSeo(Astro.locals.supabase, 'bundle', lang);
 
 const { data: bundlesRaw } = await Astro.locals.supabase
   .from('bundles')
@@ -18,7 +21,11 @@ const trMap = await getTranslationsMany(Astro.locals.supabase, 'bundle', bundleI
 const bundlesTr = bundles.map((b: any) => applyTranslations(b, trMap.get(b.id) ?? {}));
 ---
 
-<BaseLayout title="Bundle" description={t('bundle_desc')}>
+<BaseLayout
+  title={pageSeo.seo_titolo ?? 'Bundle'}
+  description={pageSeo.seo_descrizione ?? t('bundle_desc')}
+  ogImage={pageSeo.seo_og_image ?? undefined}
+>
   <PageHero
     eyebrow={`${t('proto_label')} · Bundle`}
     subtitle={t('bundle_sub')}

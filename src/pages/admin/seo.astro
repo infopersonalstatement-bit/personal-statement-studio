@@ -1,0 +1,205 @@
+---
+import AdminLayout from '../../layouts/AdminLayout.astro';
+import { createSupabaseAdminClient } from '../../lib/supabase/server';
+import { getAllPageSeo, DEFAULTS } from '../../lib/page-seo';
+
+const supabase = createSupabaseAdminClient();
+
+const allSeo = await getAllPageSeo(supabase);
+
+// Controlla quali pagine hanno già traduzioni
+const { data: tradottiRows } = await supabase
+  .from('page_seo_translations')
+  .select('page');
+const tradottiSet = new Set((tradottiRows ?? []).map((r: any) => r.page));
+
+const PAGE_LABELS: Record<string, string> = {
+  'home':             'Home (/)' ,
+  'manifesto':        'Manifesto (/manifesto)',
+  'shop':             'Shop Hub (/shop)',
+  'blog':             'Blog (/blog)',
+  'bundle':           'Bundle (/shop/bundle)',
+  'glow-up':          'Glow-Up (/shop/protocollo/glow-up)',
+  'digital-identity': 'Digital Identity (/shop/protocollo/digital-identity)',
+};
+
+const successMsg = Astro.url.searchParams.get('ok') === '1' ? 'SEO salvata con successo!' : '';
+---
+
+<AdminLayout title="SEO Pagine" activeNav="seo">
+
+  {successMsg && (
+    <div class="mb-6 rounded-xl px-5 py-3 text-sm font-medium" style="background-color: color-mix(in srgb, var(--gold) 12%, transparent); color: var(--gold);">
+      ✔ {successMsg}
+    </div>
+  )}
+
+  <div class="mb-8">
+    <h1 class="font-display text-3xl font-light" style="color: var(--text);">SEO Pagine Statiche</h1>
+    <p class="mt-2 text-sm" style="color: var(--text-muted);">
+      Personalizza titolo, descrizione meta e Open Graph per ogni pagina del sito. Lascia vuoto per usare i valori di default del codice. Clicca <strong>🌐 Traduci</strong> per generare automaticamente le versioni EN, FR, ES, DE con GPT.
+    </p>
+  </div>
+
+  <div class="space-y-6">
+    {Object.entries(PAGE_LABELS).map(([pageKey, pageLabel]) => {
+      const current = allSeo[pageKey as keyof typeof allSeo];
+      const def     = DEFAULTS[pageKey as keyof typeof DEFAULTS];
+      const isTr    = tradottiSet.has(pageKey);
+      return (
+        <div
+          class="rounded-2xl border p-6"
+          style="border-color: var(--border); background-color: var(--bg-card);"
+          id={`panel-${pageKey}`}
+        >
+          <div class="mb-4 flex flex-wrap items-center justify-between gap-3">
+            <div>
+              <h2 class="text-sm font-semibold uppercase tracking-widest" style="color: var(--text);">{pageLabel}</h2>
+            </div>
+            <div class="flex gap-2">
+              <button
+                type="button"
+                class="btn-traduci-pagina rounded-full border px-3 py-1 text-xs transition-all duration-200"
+                data-page={pageKey}
+                style={isTr ? 'border-color: #22c55e; color: #22c55e;' : 'border-color: var(--border); color: var(--text-muted);'}
+                onmouseover="this.style.borderColor='#7c6ff7'; this.style.color='#7c6ff7'"
+                onmouseout={isTr
+                  ? "this.style.borderColor='#22c55e'; this.style.color='#22c55e'"
+                  : "this.style.borderColor='var(--border)'; this.style.color='var(--text-muted)'"}
+                title={isTr ? 'Già tradotto — clicca per ritradurre' : 'Genera versioni EN, FR, ES, DE con GPT'}
+              >
+                {isTr ? '✔ Tradotto' : '🌐 Traduci'}
+              </button>
+            </div>
+          </div>
+
+          <form class="form-seo-pagina space-y-4" data-page={pageKey}>
+            <div>
+              <label class="mb-1.5 block text-xs font-semibold uppercase tracking-widest" style="color: var(--text-muted);">
+                Titolo SEO
+              </label>
+              <input
+                type="text"
+                name="seo_titolo"
+                value={current?.seo_titolo ?? ''}
+                placeholder={def?.seo_titolo ?? 'Titolo pagina…'}
+                maxlength="70"
+                class="auth-input w-full"
+              />
+              <p class="mt-1 text-[10px]" style="color: var(--text-muted);">
+                Default: <em>{def?.seo_titolo ?? '—'}</em>
+              </p>
+            </div>
+            <div>
+              <label class="mb-1.5 block text-xs font-semibold uppercase tracking-widest" style="color: var(--text-muted);">
+                Descrizione Meta
+              </label>
+              <textarea
+                name="seo_descrizione"
+                rows="2"
+                placeholder={def?.seo_descrizione ?? 'Descrizione pagina…'}
+                maxlength="165"
+                class="auth-input w-full resize-none"
+              >{current?.seo_descrizione ?? ''}</textarea>
+              <p class="mt-1 text-[10px]" style="color: var(--text-muted);">
+                Default: <em>{def?.seo_descrizione ?? '—'}</em>
+              </p>
+            </div>
+            <div>
+              <label class="mb-1.5 block text-xs font-semibold uppercase tracking-widest" style="color: var(--text-muted);">
+                OG Image URL (opzionale)
+              </label>
+              <input
+                type="text"
+                name="seo_og_image"
+                value={current?.seo_og_image ?? ''}
+                placeholder="https://… oppure /immagine.jpg"
+                class="auth-input w-full"
+              />
+            </div>
+            <div class="flex items-center gap-3 pt-1">
+              <button
+                type="submit"
+                class="rounded-full border px-5 py-2 text-xs font-semibold uppercase tracking-widest transition-all duration-200"
+                style="border-color: var(--gold); color: var(--gold);"
+                onmouseover="this.style.backgroundColor='var(--gold)'; this.style.color='#0F0D0A'"
+                onmouseout="this.style.backgroundColor='transparent'; this.style.color='var(--gold)'"
+              >
+                Salva
+              </button>
+              <span class="msg-seo text-xs hidden" style="color: var(--gold);"></span>
+            </div>
+          </form>
+        </div>
+      );
+    })}
+  </div>
+
+</AdminLayout>
+
+<script is:inline>
+(function () {
+  // Salva SEO pagina
+  document.querySelectorAll('.form-seo-pagina').forEach(function (form) {
+    form.addEventListener('submit', async function (e) {
+      e.preventDefault();
+      var page = form.getAttribute('data-page');
+      var msg  = form.querySelector('.msg-seo');
+      var btn  = form.querySelector('button[type="submit"]');
+      var origText = btn.textContent;
+      btn.disabled = true; btn.textContent = 'Salvataggio…';
+
+      var data = {
+        page:            page,
+        seo_titolo:      form.querySelector('[name="seo_titolo"]').value.trim() || null,
+        seo_descrizione: form.querySelector('[name="seo_descrizione"]').value.trim() || null,
+        seo_og_image:    form.querySelector('[name="seo_og_image"]').value.trim() || null,
+      };
+
+      try {
+        var res  = await fetch('/api/admin/page-seo', {
+          method:  'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body:    JSON.stringify(data),
+        });
+        var json = await res.json();
+        if (!res.ok) throw new Error(json.error || 'Errore');
+        if (msg) { msg.textContent = '✔ Salvato'; msg.style.color = 'var(--gold)'; msg.classList.remove('hidden'); }
+        setTimeout(function () { if (msg) msg.classList.add('hidden'); }, 3000);
+      } catch (err) {
+        if (msg) { msg.textContent = '✗ ' + (err.message || 'Errore'); msg.style.color = '#ef4444'; msg.classList.remove('hidden'); }
+        setTimeout(function () { if (msg) msg.classList.add('hidden'); }, 4000);
+      } finally {
+        btn.disabled = false; btn.textContent = origText;
+      }
+    });
+  });
+
+  // Traduci SEO pagina con GPT
+  document.querySelectorAll('.btn-traduci-pagina').forEach(function (el) {
+    el.addEventListener('click', async function () {
+      var page     = el.getAttribute('data-page');
+      var origText = el.textContent;
+      el.disabled  = true; el.textContent = '⏳ Traduzione…';
+      try {
+        var res  = await fetch('/api/admin/translate-content', {
+          method:  'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body:    JSON.stringify({ entity_type: 'pagina', entity_id: page }),
+        });
+        var data = await res.json();
+        if (!res.ok) throw new Error(data.error || 'Errore');
+        el.textContent = '✔ Tradotto';
+        el.style.borderColor = '#22c55e'; el.style.color = '#22c55e';
+        el.disabled = false;
+        el.title = 'Già tradotto — clicca per ritradurre';
+        el.onmouseout = function () { el.style.borderColor = '#22c55e'; el.style.color = '#22c55e'; };
+      } catch (err) {
+        el.textContent = '✗ ' + (err.message || 'Errore');
+        el.style.color = '#ef4444';
+        setTimeout(function () { el.textContent = origText; el.style.color = ''; el.disabled = false; }, 4000);
+      }
+    });
+  });
+})();
+</script>

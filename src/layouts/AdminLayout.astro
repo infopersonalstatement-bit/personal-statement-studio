@@ -9,7 +9,7 @@ if (!user || !isAdmin) return Astro.redirect('/dashboard');
 
 interface Props {
   title: string;
-  activeNav?: 'overview' | 'prodotti' | 'bundles' | 'blog' | 'analytics' | 'categorie';
+  activeNav?: 'overview' | 'prodotti' | 'bundles' | 'blog' | 'analytics' | 'categorie' | 'seo';
 }
 
 const { title, activeNav } = Astro.props;
@@ -22,6 +22,7 @@ const navItems = [
   { href: '/admin/bundles',    label: 'Bundle',         id: 'bundles' },
   { href: '/admin/blog',       label: 'Blog',           id: 'blog' },
   { href: '/admin/categorie',  label: 'Categorie & Tag',id: 'categorie' },
+  { href: '/admin/seo',        label: 'SEO Pagine',     id: 'seo' },
 ];
 ---
 
