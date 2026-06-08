@@ -16,6 +16,7 @@ const [
   { data: prodotti, error: listErr },
   { data: categorie },
   { data: tagDisponibili },
+  { data: tradottiRows },
 ] = await Promise.all([
   supabase
     .from('prodotti')
@@ -23,7 +24,14 @@ const [
     .order('created_at', { ascending: false }),
   supabase.from('categorie').select('id, nome').in('tipo', ['shop', 'both']).order('nome'),
   supabase.from('tag').select('id, nome').in('tipo', ['shop', 'both']).order('nome'),
+  supabase
+    .from('content_translations')
+    .select('entity_id')
+    .eq('entity_type', 'prodotto'),
 ]);
+
+// Set degli ID già tradotti per lookup O(1)
+const tradottiSet = new Set((tradottiRows ?? []).map((r: any) => r.entity_id));
 ---
 
 <AdminLayout title="Prodotti & PDF" activeNav="prodotti">
@@ -261,12 +269,16 @@ const [
                       class="btn-traduci rounded-full border px-3 py-1 text-xs transition-all duration-200"
                       data-id={p.id}
                       data-type="prodotto"
-                      style="border-color: var(--border); color: var(--text-muted);"
+                      style={tradottiSet.has(p.id)
+                        ? 'border-color: #22c55e; color: #22c55e;'
+                        : 'border-color: var(--border); color: var(--text-muted);'}
                       onmouseover="this.style.borderColor='#7c6ff7'; this.style.color='#7c6ff7'"
-                      onmouseout="this.style.borderColor='var(--border)'; this.style.color='var(--text-muted)'"
-                      title="Genera traduzioni EN, FR, ES, DE con GPT"
+                      onmouseout={tradottiSet.has(p.id)
+                        ? "this.style.borderColor='#22c55e'; this.style.color='#22c55e'"
+                        : "this.style.borderColor='var(--border)'; this.style.color='var(--text-muted)'"}
+                      title={tradottiSet.has(p.id) ? 'Già tradotto — clicca per ritradurre' : 'Genera traduzioni EN, FR, ES, DE con GPT'}
                     >
-                      🌐 Traduci
+                      {tradottiSet.has(p.id) ? '✔ Tradotto' : '🌐 Traduci'}
                     </button>
                     <button
                       type="button"
@@ -502,12 +514,12 @@ const [
         el.textContent = '✔ Tradotto';
         el.style.borderColor = '#22c55e';
         el.style.color = '#22c55e';
-        setTimeout(function() {
-          el.textContent = origText;
-          el.style.borderColor = '';
-          el.style.color = '';
-          el.disabled = false;
-        }, 3000);
+        el.disabled = false;
+        el.title = 'Già tradotto — clicca per ritradurre';
+        el.onmouseout = function() {
+          el.style.borderColor = '#22c55e';
+          el.style.color = '#22c55e';
+        };
       } catch(err) {
         el.textContent = '✗ ' + (err.message || 'Errore');
         el.style.color = '#ef4444';

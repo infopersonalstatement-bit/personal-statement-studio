@@ -6,6 +6,7 @@ import { getTranslationsMany, applyTranslations } from '../../../lib/content-i18
 
 const { slug } = Astro.params;
 const lang = Astro.locals.lang ?? 'it';
+const t    = Astro.locals.t;
 const protocollo = slug ? getProtocollo(slug) : undefined;
 if (!protocollo) return Astro.redirect('/shop');
 
@@ -21,15 +22,21 @@ const trMap = await getTranslationsMany(Astro.locals.supabase, 'prodotto', prodI
 const prodottiTr = prodotti.map((p: any) => applyTranslations(p, trMap.get(p.id) ?? {}));
 ---
 
-<BaseLayout title={protocollo.nome} description={protocollo.descrizione}>
-  <PageHero eyebrow={`Protocollo · ${protocollo.nome}`} subtitle={protocollo.pageSubtitle}>
+<BaseLayout
+  title={protocollo.nome}
+  description={slug === 'glow-up' ? t('proto_gup_desc') : t('proto_di_desc')}
+>
+  <PageHero
+    eyebrow={`${t('proto_label')} · ${protocollo.nome}`}
+    subtitle={slug === 'glow-up' ? t('proto_gup_sub') : t('proto_di_sub')}
+  >
     {protocollo.nome}
   </PageHero>
 
   <div class="mx-auto max-w-6xl px-6 pb-4">
     <a href="/shop" class="text-xs uppercase tracking-widest" style="color: var(--text-muted);"
       onmouseover="this.style.color='var(--gold)'" onmouseout="this.style.color='var(--text-muted)'">
-      ← Tutti i protocolli
+      {t('shop_back')}
     </a>
   </div>
 
@@ -65,7 +72,7 @@ const prodottiTr = prodotti.map((p: any) => applyTranslations(p, trMap.get(p.id)
                 )}
               </div>
               <span class="text-xs font-semibold uppercase tracking-widest" style="color: var(--text-muted);">
-                Dettagli →
+                {t('shop_details')}
               </span>
             </div>
           </a>
@@ -74,10 +81,10 @@ const prodottiTr = prodotti.map((p: any) => applyTranslations(p, trMap.get(p.id)
     ) : (
       <div class="py-20 text-center">
         <p class="font-display text-2xl font-light mb-3" style="color: var(--text);">
-          Protocolli in preparazione
+          {t('shop_proto_empty')}
         </p>
         <p class="text-sm" style="color: var(--text-muted);">
-          I contenuti per {protocollo.nome} saranno disponibili a breve.
+          {t('shop_proto_empty_d').replace('{nome}', protocollo.nome)}
         </p>
       </div>
     )}

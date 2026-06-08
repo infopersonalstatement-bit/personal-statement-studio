@@ -2,29 +2,41 @@
 import BaseLayout from '../../../layouts/BaseLayout.astro';
 import PageHero from '../../../components/common/PageHero.astro';
 import { BUNDLE_HUB } from '../../../lib/protocolli';
+import { getTranslationsMany, applyTranslations } from '../../../lib/content-i18n';
 
-const { data: bundles } = await Astro.locals.supabase
+const t    = Astro.locals.t;
+const lang = Astro.locals.lang ?? 'it';
+
+const { data: bundlesRaw } = await Astro.locals.supabase
   .from('bundles')
   .select('id, nome, prezzo, prezzo_originale, descrizione, slug')
   .order('created_at', { ascending: false });
+
+const bundles = bundlesRaw ?? [];
+const bundleIds = bundles.map((b: any) => b.id);
+const trMap = await getTranslationsMany(Astro.locals.supabase, 'bundle', bundleIds, lang);
+const bundlesTr = bundles.map((b: any) => applyTranslations(b, trMap.get(b.id) ?? {}));
 ---
 
-<BaseLayout title="Bundle" description={BUNDLE_HUB.descrizione}>
-  <PageHero eyebrow="Protocollo · Bundle" subtitle={BUNDLE_HUB.pageSubtitle}>
+<BaseLayout title="Bundle" description={t('bundle_desc')}>
+  <PageHero
+    eyebrow={`${t('proto_label')} · Bundle`}
+    subtitle={t('bundle_sub')}
+  >
     {BUNDLE_HUB.nome}
   </PageHero>
 
   <div class="mx-auto max-w-6xl px-6 pb-4">
     <a href="/shop" class="text-xs uppercase tracking-widest" style="color: var(--text-muted);"
       onmouseover="this.style.color='var(--gold)'" onmouseout="this.style.color='var(--text-muted)'">
-      ← Tutti i protocolli
+      {t('shop_back')}
     </a>
   </div>
 
   <section class="mx-auto max-w-6xl px-6 py-10 pb-24">
-    {bundles && bundles.length > 0 ? (
+    {bundlesTr && bundlesTr.length > 0 ? (
       <div class="grid gap-6 sm:grid-cols-2">
-        {bundles.map((b: any) => (
+        {bundlesTr.map((b: any) => (
           <a
             href={`/shop/bundle/${b.slug ?? b.id}`}
             class="group flex flex-col rounded-2xl border p-8 transition-all duration-300"
@@ -33,7 +45,7 @@ const { data: bundles } = await Astro.locals.supabase
             onmouseout="this.style.borderColor='var(--border)'; this.style.transform='translateY(0)'"
           >
             <p class="mb-2 text-[10px] font-semibold uppercase tracking-[0.3em]" style="color: var(--gold);">
-              Bundle · Risparmio
+              {t('bundle_savings')}
             </p>
             <h2 class="font-display mb-3 text-2xl font-light" style="color: var(--text);">{b.nome}</h2>
             {b.descrizione && (
@@ -57,16 +69,19 @@ const { data: bundles } = await Astro.locals.supabase
                 </>
               )}
             </div>
+            <span class="mt-4 text-xs font-semibold uppercase tracking-widest" style="color: var(--gold);">
+              {t('shop_details')}
+            </span>
           </a>
         ))}
       </div>
     ) : (
       <div class="py-20 text-center">
         <p class="font-display text-2xl font-light mb-3" style="color: var(--text);">
-          Nessun bundle disponibile
+          {t('bundle_empty_t')}
         </p>
         <p class="text-sm" style="color: var(--text-muted);">
-          Le offerte combinate saranno pubblicate a breve.
+          {t('bundle_empty_d')}
         </p>
       </div>
     )}

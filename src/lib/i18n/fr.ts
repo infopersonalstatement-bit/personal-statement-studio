@@ -163,6 +163,21 @@ const fr: Record<string, string> = {
   blog_empty_desc:   'Les articles seront disponibles prochainement.',
   blog_all:          'Tous',
 
+  // ── Pages boutique ───────────────────────────────────────────
+  shop_back:            '← Tous les protocoles',
+  shop_details:         'Détails →',
+  shop_explore:         'Explorer →',
+  shop_view_bundles:    'Voir les bundles →',
+  shop_hub_headline:    'Accéder aux',
+  shop_hub_headline_em: 'Protocoles',
+  shop_proto_avail:     'disponibles',
+  shop_proto_coming:    'Bientôt disponible',
+  shop_proto_empty:     'Protocoles en préparation',
+  shop_proto_empty_d:   'Le contenu pour {nome} sera disponible prochainement.',
+  bundle_savings:       'Bundle · Économies',
+  bundle_empty_t:       'Aucun bundle disponible',
+  bundle_empty_d:       'Les offres combinées seront publiées prochainement.',
+
   // ── Shop ─────────────────────────────────────────────────────
   shop_choose:       'Choisissez votre parcours',
   shop_available:    'Disponibles',

@@ -1,13 +1,16 @@
 ---
 import BaseLayout from '../../layouts/BaseLayout.astro';
 import PageHero from '../../components/common/PageHero.astro';
-import { PROTOCOLLI, BUNDLE_HUB, SHOP_HUB_COPY } from '../../lib/protocolli';
+import { PROTOCOLLI, BUNDLE_HUB } from '../../lib/protocolli';
+
+const t    = Astro.locals.t;
+const lang = Astro.locals.lang ?? 'it';
 
 const { data: counts } = await Astro.locals.supabase
   .from('prodotti')
   .select('protocollo');
 
-const glowCount = (counts ?? []).filter((p) => p.protocollo === 'glow-up').length;
+const glowCount    = (counts ?? []).filter((p) => p.protocollo === 'glow-up').length;
 const digitalCount = (counts ?? []).filter((p) => p.protocollo === 'digital-identity').length;
 
 const { count: bundleCount } = await Astro.locals.supabase
@@ -16,21 +19,23 @@ const { count: bundleCount } = await Astro.locals.supabase
 ---
 
 <BaseLayout
-  title={SHOP_HUB_COPY.title}
-  description={SHOP_HUB_COPY.metaDescription}
+  title={t('shop_hub_eyebrow')}
+  description={t('shop_hub_subtitle')}
 >
   <PageHero
-    eyebrow={SHOP_HUB_COPY.eyebrow}
-    subtitle={SHOP_HUB_COPY.heroSubtitle}
+    eyebrow={t('shop_hub_eyebrow')}
+    subtitle={t('shop_hub_subtitle')}
     subtitleWide={true}
   >
-    Accedi ai <em class="not-italic font-semibold" style="color: var(--gold);">Protocolli</em>.
+    {t('shop_hub_headline')} <em class="not-italic font-semibold" style="color: var(--gold);">{t('shop_hub_headline_em')}</em>.
   </PageHero>
 
   <section class="mx-auto max-w-5xl px-6 py-16 pb-28">
     <div class="grid gap-8 md:grid-cols-3">
       {PROTOCOLLI.map((proto) => {
-        const count = proto.slug === 'glow-up' ? glowCount : digitalCount;
+        const count    = proto.slug === 'glow-up' ? glowCount : digitalCount;
+        const tagline  = proto.slug === 'glow-up' ? t('proto_gup_tagline') : t('proto_di_tagline');
+        const descText = proto.slug === 'glow-up' ? t('proto_gup_desc')    : t('proto_di_desc');
         return (
           <a
             href={proto.href}
@@ -49,20 +54,20 @@ const { count: bundleCount } = await Astro.locals.supabase
               />
             </div>
             <p class="mb-3 text-[10px] font-semibold uppercase tracking-[0.3em]" style="color: var(--gold);">
-              Protocollo
+              {t('proto_label')}
             </p>
             <h2 class="font-display mb-2 text-3xl font-light" style="color: var(--text);">{proto.nome}</h2>
             <p class="mb-4 text-xs font-semibold uppercase tracking-widest" style="color: var(--text-muted);">
-              {proto.tagline}
+              {tagline}
             </p>
             <p class="mb-8 flex-1 text-sm leading-relaxed" style="color: var(--text-muted);">
-              {proto.descrizione}
+              {descText}
             </p>
             <p class="text-xs" style="color: var(--text-muted);">
-              {count > 0 ? `${count} protocollo${count === 1 ? '' : 'i'} disponibili` : 'In arrivo'}
+              {count > 0 ? `${count} ${t('shop_proto_avail')}` : t('shop_proto_coming')}
             </p>
             <span class="mt-4 text-xs font-semibold uppercase tracking-widest" style="color: var(--gold);">
-              Esplora →
+              {t('shop_explore')}
             </span>
           </a>
         );
@@ -85,20 +90,20 @@ const { count: bundleCount } = await Astro.locals.supabase
           />
         </div>
         <p class="mb-3 text-[10px] font-semibold uppercase tracking-[0.3em]" style="color: var(--gold);">
-          Offerta combinata
+          {t('bundle_label')}
         </p>
         <h2 class="font-display mb-2 text-3xl font-light" style="color: var(--text);">{BUNDLE_HUB.nome}</h2>
         <p class="mb-4 text-xs font-semibold uppercase tracking-widest" style="color: var(--text-muted);">
-          {BUNDLE_HUB.tagline}
+          {t('bundle_tagline')}
         </p>
         <p class="mb-8 flex-1 text-sm leading-relaxed" style="color: var(--text-muted);">
-          {BUNDLE_HUB.descrizione}
+          {t('bundle_desc')}
         </p>
         <p class="text-xs" style="color: var(--text-muted);">
-          {(bundleCount ?? 0) > 0 ? `${bundleCount} bundle attivi` : 'Nessun bundle ancora'}
+          {(bundleCount ?? 0) > 0 ? `${bundleCount} ${t('home_bundles_active')}` : t('home_no_bundles')}
         </p>
         <span class="mt-4 text-xs font-semibold uppercase tracking-widest" style="color: var(--gold);">
-          Vedi bundle →
+          {t('shop_view_bundles')}
         </span>
       </a>
     </div>
