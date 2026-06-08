@@ -2,8 +2,10 @@
 import BaseLayout from '../../layouts/BaseLayout.astro';
 import ShareButton from '../../components/common/ShareButton.astro';
 import BookViewer from '../../components/common/BookViewer.astro';
+import { getTranslations, applyTranslations } from '../../lib/content-i18n';
 
 const { slug } = Astro.params;
+const lang = Astro.locals.lang ?? 'it';
 
 let articolo: any = null;
 
@@ -25,6 +27,10 @@ if (bySlug) {
 }
 
 if (!articolo || !articolo.pubblicato) return Astro.redirect('/blog');
+
+// Applica traduzioni se disponibili (titolo, estratto, seo_titolo, seo_descrizione)
+const artTr = await getTranslations(Astro.locals.supabase, 'articolo', articolo.id, lang);
+articolo = applyTranslations(articolo, artTr);
 
 const metaTitle       = articolo.seo_titolo      || articolo.titolo;
 const metaDescription = articolo.seo_descrizione || articolo.estratto || '';

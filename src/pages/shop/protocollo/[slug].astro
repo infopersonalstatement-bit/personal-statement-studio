@@ -2,16 +2,23 @@
 import BaseLayout from '../../../layouts/BaseLayout.astro';
 import PageHero from '../../../components/common/PageHero.astro';
 import { getProtocollo } from '../../../lib/protocolli';
+import { getTranslationsMany, applyTranslations } from '../../../lib/content-i18n';
 
 const { slug } = Astro.params;
+const lang = Astro.locals.lang ?? 'it';
 const protocollo = slug ? getProtocollo(slug) : undefined;
 if (!protocollo) return Astro.redirect('/shop');
 
-const { data: prodotti } = await Astro.locals.supabase
+const { data: prodottiRaw } = await Astro.locals.supabase
   .from('prodotti')
   .select('id, nome, prezzo, prezzo_originale, descrizione, slug')
   .eq('protocollo', slug)
   .order('created_at', { ascending: false });
+
+const prodotti = prodottiRaw ?? [];
+const prodIds = prodotti.map((p: any) => p.id);
+const trMap = await getTranslationsMany(Astro.locals.supabase, 'prodotto', prodIds, lang);
+const prodottiTr = prodotti.map((p: any) => applyTranslations(p, trMap.get(p.id) ?? {}));
 ---
 
 <BaseLayout title={protocollo.nome} description={protocollo.descrizione}>
@@ -27,9 +34,9 @@ const { data: prodotti } = await Astro.locals.supabase
   </div>
 
   <section class="mx-auto max-w-6xl px-6 py-10 pb-24">
-    {prodotti && prodotti.length > 0 ? (
+    {prodottiTr && prodottiTr.length > 0 ? (
       <div class="grid gap-6 sm:grid-cols-2 lg:grid-cols-3">
-        {prodotti.map((p: any) => (
+        {prodottiTr.map((p: any) => (
           <a
             href={`/shop/${p.slug ?? p.id}`}
             class="group flex flex-col rounded-2xl border p-7 transition-all duration-300"

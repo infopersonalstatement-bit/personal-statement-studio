@@ -246,7 +246,7 @@ const [
                   {new Date(p.created_at).toLocaleDateString('it-IT', { day: '2-digit', month: 'short', year: 'numeric' })}
                 </td>
                 <td class="px-5 py-4">
-                  <div class="flex gap-2">
+                  <div class="flex flex-wrap gap-2">
                     <a
                       href={`/admin/prodotti/${p.id}`}
                       class="rounded-full border px-3 py-1 text-xs transition-all duration-200"
@@ -256,6 +256,18 @@ const [
                     >
                       Modifica
                     </a>
+                    <button
+                      type="button"
+                      class="btn-traduci rounded-full border px-3 py-1 text-xs transition-all duration-200"
+                      data-id={p.id}
+                      data-type="prodotto"
+                      style="border-color: var(--border); color: var(--text-muted);"
+                      onmouseover="this.style.borderColor='#7c6ff7'; this.style.color='#7c6ff7'"
+                      onmouseout="this.style.borderColor='var(--border)'; this.style.color='var(--text-muted)'"
+                      title="Genera traduzioni EN, FR, ES, DE con GPT"
+                    >
+                      🌐 Traduci
+                    </button>
                     <button
                       type="button"
                       class="btn-elimina-prodotto rounded-full border px-3 py-1 text-xs transition-all duration-200"
@@ -470,6 +482,43 @@ const [
       }
     });
   }
+
+  // Traduci contenuto via GPT
+  document.querySelectorAll('.btn-traduci').forEach(function(el) {
+    el.addEventListener('click', async function() {
+      const id   = el.getAttribute('data-id');
+      const type = el.getAttribute('data-type');
+      const origText = el.textContent;
+      el.disabled = true;
+      el.textContent = '⏳ Traduzione…';
+      try {
+        const res = await fetch('/api/admin/translate-content', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ entity_id: id, entity_type: type }),
+        });
+        const data = await res.json();
+        if (!res.ok) throw new Error(data.error || 'Errore');
+        el.textContent = '✔ Tradotto';
+        el.style.borderColor = '#22c55e';
+        el.style.color = '#22c55e';
+        setTimeout(function() {
+          el.textContent = origText;
+          el.style.borderColor = '';
+          el.style.color = '';
+          el.disabled = false;
+        }, 3000);
+      } catch(err) {
+        el.textContent = '✗ ' + (err.message || 'Errore');
+        el.style.color = '#ef4444';
+        setTimeout(function() {
+          el.textContent = origText;
+          el.style.color = '';
+          el.disabled = false;
+        }, 4000);
+      }
+    });
+  });
 
   // Elimina prodotto via API
   document.querySelectorAll('.btn-elimina-prodotto').forEach(function(el) {

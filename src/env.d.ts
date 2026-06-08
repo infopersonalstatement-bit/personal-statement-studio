@@ -27,6 +27,9 @@ interface ImportMetaEnv {
   readonly PAYPAL_WEBHOOK_ID: string;
   readonly PAYPAL_MODE: 'sandbox' | 'live';
 
+  // ─── OpenAI ──────────────────────────────────────────────────────────────
+  readonly OPENAI_API_KEY: string;
+
   // ─── App ─────────────────────────────────────────────────────────────────
   readonly PUBLIC_SITE_URL: string;
 }

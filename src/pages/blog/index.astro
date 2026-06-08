@@ -1,15 +1,24 @@
 ---
 import BaseLayout from '../../layouts/BaseLayout.astro';
 import PageHero from '../../components/common/PageHero.astro';
+import { getTranslationsMany, applyTranslations } from '../../lib/content-i18n';
+
+const lang = Astro.locals.lang ?? 'it';
+const t    = Astro.locals.t;
 
 const { data: categorie } = await Astro.locals.supabase
   .from('categorie').select('nome, slug').in('tipo', ['blog','both']).order('nome');
 
-const { data: articoli } = await Astro.locals.supabase
+const { data: articoliRaw } = await Astro.locals.supabase
   .from('articoli')
   .select('id, titolo, slug, estratto, created_at, categorie(nome, slug)')
   .eq('pubblicato', true)
   .order('created_at', { ascending: false });
+
+const articoli = articoliRaw ?? [];
+const articoliIds = articoli.map((a: any) => a.id);
+const trMap = await getTranslationsMany(Astro.locals.supabase, 'articolo', articoliIds, lang);
+const articoliTr = articoli.map((a: any) => applyTranslations(a, trMap.get(a.id) ?? {}));
 ---
 
 <BaseLayout title="Blog" description="Riflessioni su identità, posizionamento e crescita personale.">
@@ -32,9 +41,9 @@ const { data: articoli } = await Astro.locals.supabase
   )}
 
   <section class="mx-auto max-w-4xl px-6 py-10">
-    {articoli && articoli.length > 0 ? (
+    {articoliTr && articoliTr.length > 0 ? (
       <div class="space-y-6">
-        {articoli.map((a: any) => (
+        {articoliTr.map((a: any) => (
           <a
             href={`/blog/${a.slug}`}
             class="group flex flex-col rounded-2xl border p-7 transition-all duration-300"

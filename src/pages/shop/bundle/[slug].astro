@@ -1,9 +1,11 @@
 ---
 import BaseLayout from '../../../layouts/BaseLayout.astro';
+import { getTranslations, applyTranslations } from '../../../lib/content-i18n';
 
 const { slug } = Astro.params;
 const user = Astro.locals.user;
 const isAdmin = Astro.locals.isAdmin;
+const lang = Astro.locals.lang ?? 'it';
 
 let bundle: any = null;
 
@@ -24,6 +26,10 @@ if (bySlug) {
 }
 
 if (!bundle) return Astro.redirect('/shop/bundle');
+
+// Applica traduzioni bundle
+const bundleTr = await getTranslations(Astro.locals.supabase, 'bundle', bundle.id, lang);
+bundle = applyTranslations(bundle, bundleTr);
 
 const { data: bundleItems, error: bundleItemsErr } = await Astro.locals.supabase
   .from('bundle_prodotti')

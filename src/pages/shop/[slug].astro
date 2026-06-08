@@ -2,10 +2,12 @@
 import BaseLayout from '../../layouts/BaseLayout.astro';
 import ShareButton from '../../components/common/ShareButton.astro';
 import { getProtocollo } from '../../lib/protocolli';
+import { getTranslations, applyTranslations } from '../../lib/content-i18n';
 
 const { slug } = Astro.params;
 const user    = Astro.locals.user;
 const isAdmin = Astro.locals.isAdmin;
+const lang    = Astro.locals.lang ?? 'it';
 
 // Cerca prima per slug, poi per ID (compatibilità link vecchi con UUID)
 let prodotto: any = null;
@@ -27,6 +29,10 @@ if (bySlug) {
 }
 
 if (!prodotto) return Astro.redirect('/shop');
+
+// Applica traduzioni se disponibili
+const prodTr = await getTranslations(Astro.locals.supabase, 'prodotto', prodotto.id, lang);
+prodotto = applyTranslations(prodotto, prodTr);
 
 const metaTitle       = prodotto.seo_titolo      || prodotto.nome;
 const metaDescription = prodotto.seo_descrizione || prodotto.descrizione || '';
