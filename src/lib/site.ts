@@ -10,7 +10,7 @@ export function getSiteUrl(requestUrl?: string): string {
     return new URL(requestUrl).origin;
   }
 
-  return configured || 'https://personal-statement-studio.vercel.app';
+  return configured || 'https://personalstatementstudio.com';
 }
 
 export function authCallbackUrl(requestUrl?: string): string {
